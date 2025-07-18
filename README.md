@@ -1,0 +1,2 @@
+# CooperationWithNero
+get money
