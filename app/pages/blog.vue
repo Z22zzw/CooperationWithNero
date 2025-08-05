@@ -47,7 +47,7 @@
                   <!-- 左侧：缩小的图片 -->
                   <div class="post-image">
                     <img :src="article.imgUrl" :alt="article.title" />
-                    <span class="category-label">GEO技术</span>
+<!--                    <span class="category-label">GEO技术</span>-->
                   </div>
 
                   <!-- 右侧：文章内容 -->

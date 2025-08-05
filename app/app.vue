@@ -16,8 +16,8 @@ const menu=new Map([
   ["关于我们", "/about"],
 ]);
 const profile={
-  phone:"400-021-6120",
-  email:"bd@digitaltech.cn",
-  address:"上海市徐汇区绿地汇中心A座25楼2516室"
+  phone:"027-65384701",
+  email:"zh@whdxcy.com",
+  address:"湖北省武汉市洪山区欢乐大道1号德成国贸中心B栋37层"
 }
 </script>

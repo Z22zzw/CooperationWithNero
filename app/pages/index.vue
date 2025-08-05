@@ -45,15 +45,15 @@ const GeoShow:Array<Geo> = [
         "优化用户查询与企业内容的匹配度"
     ]
   },
-  {
-    name:"Kimi",
-    description:"专业的Kimi优化服务，帮助企业在Kimi平台上获得更高的内容权重",
-    list:[
-        "针对Kimi的检索和生成机制进行优化",
-        "提升企业信息在Kimi回答中的引用率",
-        "优化内容结构以适应Kimi的解析方式"
-    ]
-  },
+  // {
+  //   name:"Kimi",
+  //   description:"专业的Kimi优化服务，帮助企业在Kimi平台上获得更高的内容权重",
+  //   list:[
+  //       "针对Kimi的检索和生成机制进行优化",
+  //       "提升企业信息在Kimi回答中的引用率",
+  //       "优化内容结构以适应Kimi的解析方式"
+  //   ]
+  // },
   {
     name:"文心一言",
     description:"专业的文心一言优化服务，提升企业信息在文心一言中的可见度",
@@ -203,12 +203,12 @@ const readArticle = (article: Article) => {
       </div>
     </section>
     <!-- 客户评价 -->
-    <section class="testimonials">
-      <div class="container">
-        <h2>对于结果，您所熟悉的他们这样说</h2>
-        <p class="section-subtitle">数字科技感恩众多知名伙伴对我们的信赖与认可</p>
+    <!-- <section class="testimonials"> -->
+      <!-- <div class="container"> -->
+        <!-- <h2>对于结果，您所熟悉的他们这样说</h2>
+        <p class="section-subtitle">数字科技感恩众多知名伙伴对我们的信赖与认可</p> -->
 
-        <div class="testimonial-card"  v-for="header in testimonials">
+        <!-- <div class="testimonial-card"  v-for="header in testimonials">
           <div class="testimonial-header">
             <div class="client-info">
               <h3>{{header.name}}</h3>
@@ -216,9 +216,9 @@ const readArticle = (article: Article) => {
             </div>
           </div>
           <p class="testimonial-text">{{header.appraise}}</p>
-        </div>
-      </div>
-    </section>
+        </div> -->
+      <!-- </div> -->
+    <!-- </section> -->
     <!-- 行业知识 -->
     <section id="knowledge" class="knowledge">
       <div class="container">

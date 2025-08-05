@@ -93,9 +93,30 @@ const fit:Array<Item> = [
     content:"推荐理财方案，提高用户粘性"
   }
 ]
+// 控制模态框显示的状态变量
+const showQrModal = ref(false)
+
+// 打开模态框的函数
+const contactUs = () => {
+  showQrModal.value = true
+}
+
+// 关闭模态框的函数
+const closeModal = () => {
+  showQrModal.value = false
+}
 </script>
 
 <template>
+  <!-- 二维码模态框 -->
+  <div v-if="showQrModal" class="qr-modal">
+    <div class="qr-modal-overlay" @click="closeModal"></div>
+    <div class="qr-modal-content">
+      <button class="qr-modal-close" @click="closeModal">&times;</button>
+      <!-- 为解决二维码模糊问题，添加 decoding="async" loading="lazy" 属性，并确保图片格式和尺寸合适 -->
+      <img src="~/assets/qr1.jpg" alt="二维码" class="qr-image" decoding="async" loading="lazy" />
+    </div>
+  </div>
   <!-- 页面横幅 -->
   <section class="hero">
     <div class="hero-container">
@@ -103,7 +124,7 @@ const fit:Array<Item> = [
         <h1>专业GEO生成式引擎优化服务</h1>
         <p>让您的品牌信息精准触达DeepSeek、Kimi、豆包、腾讯元宝等AI平台用户</p>
         <div class="hero-buttons">
-          <button class="btn-primary" onclick="contactUs()">立即咨询</button>
+          <button class="btn-primary" @click="contactUs()">立即咨询</button>
         </div>
       </div>
       <div class="hero-image">
@@ -140,7 +161,8 @@ const fit:Array<Item> = [
             <ul style="list-style: none; margin-bottom: 30px;">
               <li style="margin-bottom: 10px; display: flex; align-items: center;" v-for="merit in order.merit"><i class="fas fa-check" style="color: var(--primary-blue); margin-right: 10px;"></i>{{merit}}</li>
             </ul>
-            <button class="btn-primary" style="width: 100%;" onclick="contactUs()">选择方案</button>
+            
+            <button class="btn-primary" style="width: 100%;" @click="contactUs()">选择方案</button>
           </div>
         </div>
       </div>
