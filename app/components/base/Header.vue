@@ -1,12 +1,27 @@
 ﻿<script setup lang="ts">
+import {ref} from "vue";
+
+const showQrModal = ref(false);
+
+// 打开模态框的函数
+const contactUs = () => {
+  showQrModal.value = true
+}
+
+// 关闭模态框的函数
+const closeModal = () => {
+  showQrModal.value = false
+}
 defineProps<{
   // name:url
   menu: Map<string, string>
 }>()
 
+
 </script>
 
 <template>
+
   <nav class="navbar">
     <div class="nav-container">
       <div class="nav-logo">
@@ -16,13 +31,24 @@ defineProps<{
       <ul class="nav-menu">
         <li v-for="[key,value] in menu.entries()"><a :href=value>{{key}}</a></li>
       </ul>
+      <button class="btn-primary" @click="contactUs" >免费试用</button>
       <div class="hamburger">
         <span></span>
         <span></span>
         <span></span>
       </div>
     </div>
+    
   </nav>
+
+  <div v-if="showQrModal" class="qr-modal">
+    <div class="qr-modal-overlay" @click="closeModal"></div>
+    <div class="qr-modal-content">
+      <button class="qr-modal-close" @click="closeModal">&times;</button>
+      <!-- 为解决二维码模糊问题，添加 decoding="async" loading="lazy" 属性，并确保图片格式和尺寸合适 -->
+      <img src="~/assets/qr1.jpg" alt="二维码" class="qr-image" decoding="async" loading="lazy" />
+    </div>
+  </div>
 </template>
 
 <style scoped>
