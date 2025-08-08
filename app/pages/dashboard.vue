@@ -1,0 +1,261 @@
+﻿<script setup lang="ts">
+const cards = [
+  {
+    name: "qwerty",
+    issues: 15,
+    updateTime: "2025-8-5 21:10:22",
+    MostVisible: "asdfgh",
+    YourVisibility: "zxcvbn",
+    TopCitation: "tem",
+    YourCitation: "vue3",
+  },
+  {
+    name: "project-alpha",
+    issues: 3,
+    updateTime: "2025-8-4 15:30:45",
+    MostVisible: "dev-team",
+    YourVisibility: "you",
+    TopCitation: "react",
+    YourCitation: "nuxt",
+  },
+  {
+    name: "data-hub",
+    issues: 7,
+    updateTime: "2025-8-3 10:20:10",
+    MostVisible: "analysts",
+    YourVisibility: "read-only",
+    TopCitation: "d3",
+    YourCitation: "chart.js",
+  },
+]
+definePageMeta({
+  layout: 'default'
+})
+const gotoProject=()=>{
+  window.location.href = "/overview"
+}
+const gotoDomain=()=>{
+  window.location.href ="/domain"
+}
+</script>
+
+<template>
+  <div class="page-container">
+    <div class="PageShow">
+      <h1>Dashboard</h1>
+    </div>
+
+    <div class="main">
+      <div class="header-row">
+        <h2>你的项目</h2>
+        <a href="#" class="add-project">
+          <i class="fas fa-plus add-icon"/>
+          添加新项目
+        </a>
+      </div>
+      <div class="projectContainer">
+        <div  @click="gotoProject"
+            v-for="card in cards"
+            :key="card.name"
+            class="projectCard"
+        >
+          <!-- 项目名 + 问题数 -->
+          <div class="card-header">
+            <h3 class="project-name">{{ card.name }}</h3>
+            <span class="issue-badge" :class="{ 'high': card.issues > 10, 'medium': card.issues > 5 }">
+              {{ card.issues }} 个问题
+            </span>
+          </div>
+
+          <!-- 更新时间 -->
+          <p class="update-time">更新于：{{ card.updateTime }}</p>
+
+          <!-- 指标行 -->
+          <div class="metrics">
+            <div class="metric">
+              <label>最高可见性</label>
+              <span>{{ card.MostVisible }}</span>
+            </div>
+            <div class="metric">
+              <label>你的可见性</label>
+              <span class="highlight">{{ card.YourVisibility }}</span>
+            </div>
+          </div>
+
+          <div class="metrics">
+            <div class="metric">
+              <label>最常引用</label>
+              <span>{{ card.TopCitation }}</span>
+            </div>
+            <div class="metric">
+              <label>你的引用</label>
+              <span class="highlight">{{ card.YourCitation }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.add-project {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px; /* 图标和文字间距 */
+
+  font-size: 16px;
+  font-weight: 500;
+  color: #1a73e8;
+
+  margin: 0;
+  padding: 10px 16px; /* 增加点击区域 */
+
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+
+  cursor: pointer;
+  text-decoration: none;
+
+  transition: all 0.2s ease;
+}
+
+.add-project:hover {
+  color: #1557b0;
+  background-color: #ebf5ff;
+  border-color: #1a73e8;
+
+  /* 图标轻微上浮 */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(26, 115, 232, 0.1);
+}
+
+.add-icon {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+.add-project:hover .add-icon {
+  transform: scale(1.2); /* 悬停时图标放大 */
+}
+.header-row {
+  display: flex;
+  justify-content: space-between; /* 左右分开 */
+  align-items: center;           /* 垂直居中 */
+  margin: 32px 0 16px 0;
+}
+.page-container {
+  padding: 24px;
+  background-color: #f9fafb;
+  min-height: 100vh;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  color: #1f2937;
+}
+
+.PageShow h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 24px;
+}
+
+.main h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 32px 0 16px 0;
+}
+
+.projectContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 12px;
+}
+
+.projectCard {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.projectCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* 卡片头部：项目名 + 问题数 */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.project-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.issue-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.issue-badge.medium {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.issue-badge.high {
+  background-color: #fecaca;
+  color: #b91c1c;
+}
+
+.update-time {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 16px 0;
+}
+
+/* 指标区域 */
+.metrics {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.metric {
+  flex: 1;
+}
+
+.metric label {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.metric span {
+  color: #374151;
+  font-weight: 500;
+}
+
+.metric .highlight {
+  color: #1a73e8;
+  font-weight: 600;
+}
+</style>
