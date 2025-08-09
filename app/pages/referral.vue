@@ -174,10 +174,9 @@ const toggleCardActive = (cardType: string) => {
     <div  class="referral-text-container">
       <div class="refer-text">
         <h1>跟踪来自AI的引用</h1>
-        <p>
-          通过 AI 助手和搜索深入了解谁在访问，并将流量归因于人们向 DeepSeek 等 AI 平台提出的问题。
-        </p>
+        <p>通过 AI 助手和搜索深入了解谁在访问，并将流量归因于人们向 DeepSeek 等 AI 平台提出的问题。</p>
       </div>
+
     </div>
 
     <!--    按钮部分-->
