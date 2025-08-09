@@ -1,16 +1,17 @@
 ﻿<script setup lang="ts">
-defineProps<{
-  menu:{
-    projects:{name:string,id:string}[]|[],
-    domains:{name:string,id:string}[]|[]
-  },
-  profiles:{
-    icon?:string,
-    name:string,
-    email:string,
-  }
-}>()
+import { ref } from 'vue';
 
+defineProps<{
+  menu: {
+    projects: { name: string; id: string }[] | [];
+    domains: { name: string; id: string }[] | [];
+  };
+  profiles: {
+    icon?: string;
+    name: string;
+    email: string;
+  };
+}>();
 </script>
 
 <template>
@@ -54,10 +55,14 @@ defineProps<{
     <div class="bottom-section">
       <ul>
         <li>
-          <a href="#" class="menuItem">
-            <i class="fas fa-question-circle icon"></i>
-            <span>获取帮助</span>
-          </a>
+          <chat>
+            <template v-slot:trigger="{ open }">
+              <a href="#" class="menuItem" @click="open">
+                <i class="fas fa-question-circle icon"></i>
+                <span>获取帮助</span>
+              </a>
+            </template>
+          </chat>
         </li>
         <li>
           <a href="#" class="menuItem">
@@ -82,30 +87,26 @@ defineProps<{
     </div>
   </nav>
 </template>
+
 <style scoped>
 /* 侧边导航栏容器 */
 .sideBar {
   width: 260px;
-  height: 100dvh; /* 更现代，适配移动端高度变化 */
+  height: 100dvh;
   background-color: #ffffff;
   display: flex;
   flex-direction: column;
   padding: 24px 0;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
-
-  /* 🔥 关键修改：固定定位 */
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 1000; /* 确保在最上层 */
-
-  /* 可选：添加滚动，防止内容过多时溢出 */
+  z-index: 1000;
   overflow-y: auto;
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: #e2e8f0 #f7fafc; /* thumb 和 track 颜色 */
+  scrollbar-width: thin;
+  scrollbar-color: #e2e8f0 #f7fafc;
 }
 
-/* WebKit 浏览器滚动条样式（可选美化） */
 .sideBar::-webkit-scrollbar {
   width: 6px;
 }
@@ -123,7 +124,7 @@ defineProps<{
 .sideBar::-webkit-scrollbar-thumb:hover {
   background: #a0aec0;
 }
-/* 分类标题样式 */
+
 .sideBar > span {
   font-size: 12px;
   font-weight: 600;
@@ -133,7 +134,6 @@ defineProps<{
   letter-spacing: 0.5px;
 }
 
-/* 列表样式 */
 .sideBar ul {
   list-style: none;
   padding: 0;
@@ -144,7 +144,6 @@ defineProps<{
   position: relative;
 }
 
-/* 常规菜单项样式 */
 .menuItem {
   display: block;
   padding: 11px 24px;
@@ -162,7 +161,6 @@ defineProps<{
   color: #1a73e8;
 }
 
-/* 添加链接样式 */
 .add-link {
   display: block;
   padding: 11px 24px;
@@ -179,12 +177,12 @@ defineProps<{
   background-color: #f5f9ff;
 }
 
-/* 底部功能区样式 */
 .bottom-section {
   margin-top: auto;
   border-top: 1px solid #eef2f7;
   padding-bottom: 30px;
 }
+
 .bottom-section li {
   margin-bottom: 4px;
 }
@@ -198,7 +196,6 @@ defineProps<{
   background-color: #f8fafc;
 }
 
-/* 图标样式 */
 .icon {
   margin-right: 14px;
   font-size: 16px;
@@ -211,7 +208,6 @@ defineProps<{
   color: #1a73e8;
 }
 
-/* 用户信息卡片样式 */
 .profile-card {
   padding: 15px 24px;
   display: flex;
@@ -237,7 +233,6 @@ defineProps<{
   margin-top: 2px;
 }
 
-/* 头像样式 */
 .avatar-icon {
   font-size: 38px;
   color: #38b2ac;
@@ -252,7 +247,6 @@ defineProps<{
   object-fit: cover;
 }
 
-/* 状态指示器 */
 .menuItem::after {
   content: '';
   position: absolute;
@@ -266,5 +260,17 @@ defineProps<{
 
 .menuItem:hover::after {
   background-color: #1a73e8;
+}
+</style>
+
+<!-- 全局样式确保弹窗在最上层 -->
+<style>
+.chat-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100000;
 }
 </style>
