@@ -78,7 +78,7 @@
           </div>
         </template>
       </div>
-
+<!---->
       <!-- 底部提示 -->
       <div class="text-center text-xs text-slate-400 mt-4">
         提示：按 Ctrl+Enter 发送消息
