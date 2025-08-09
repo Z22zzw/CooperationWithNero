@@ -6,7 +6,7 @@
         <div class="h-10 w-10 rounded-full bg-gradient-to-br from-white-500 to-white-600 flex items-center justify-center shadow-md">
            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-white-500 to-white-600 flex items-center justify-center shadow-sm">
             <!-- <i class="fa fa-robot text-white"></i> -->
-             <img src="@/assets/image/dangxialogo.png">
+             <img src="../assets/image/dangxialogo.png">
           </div>
         </div>
         <div>
@@ -31,7 +31,7 @@
       <div class="flex items-start space-x-3 animate-fade-in" v-if="messages.length === 0">
          <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-white-500 to-white-600 flex items-center justify-center shadow-sm">
             <!-- <i class="fa fa-robot text-white"></i> -->
-             <img src=@/assets/image/dangxialogo.png">
+             <img src="../assets/image/dangxialogo.png">
           </div>
         <div class="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-none px-5 py-3 shadow-sm max-w-[85%] border border-slate-100 dark:border-slate-700">
           <p class="text-slate-700 dark:text-slate-300">您好！我是智能问答助手，有什么可以帮助您的吗？请在下方输入您的问题。</p>
@@ -55,7 +55,7 @@
           <div class="flex-shrink-0 h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center shadow-sm">
              <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-white-500 to-white-600 flex items-center justify-center shadow-sm">
             <!-- <i class="fa fa-robot text-white"></i> -->
-             <img src="@/assets/image/gandanguser.png">
+             <img src="../assets/image/gandanguser.png">
           </div>
           </div>
         </template>
@@ -63,7 +63,7 @@
         <template v-else>
           <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-white-500 to-white-600 flex items-center justify-center shadow-sm">
             <!-- <i class="fa fa-robot text-white"></i> -->
-             <img src="@/assets/image/dangxialogo.png">
+             <img src="../assets/image/dangxialogo.png">
           </div>
           <div :class="message.isError ? 'bg-white dark:bg-slate-800 rounded-2xl rounded-tl-none px-5 py-3 shadow-sm max-w-[85%] border-l-4 border-red-500' : 'bg-white dark:bg-slate-800 rounded-2xl rounded-tl-none px-5 py-3 shadow-sm max-w-[85%] border border-slate-100 dark:border-slate-700'">
             <p v-if="!message.isTyping" :class="message.isError ? 'text-red-600 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'">
