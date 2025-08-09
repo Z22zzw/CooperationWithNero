@@ -1,4 +1,5 @@
 <template>
+<!--  修改-->
   <div class="relative h-[85vh] max-h-[700px] flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300">
     <!-- 顶部导航栏 -->
     <header class="bg-white dark:bg-slate-800 shadow-sm p-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-700">
@@ -78,7 +79,7 @@
           </div>
         </template>
       </div>
-<!---->
+
       <!-- 底部提示 -->
       <div class="text-center text-xs text-slate-400 mt-4">
         提示：按 Ctrl+Enter 发送消息
