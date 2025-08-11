@@ -31,7 +31,7 @@ onMounted(async () => {
 <template>
   <div class="page-container">
     <div class="PageShow">
-      <h1>Dashboard</h1>
+      <h1>主页</h1>
     </div>
 
     <div class="main">

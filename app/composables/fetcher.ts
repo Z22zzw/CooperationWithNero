@@ -33,7 +33,7 @@
     const get = async <T>(endpoint: string): Promise<T> => request<T>("GET", endpoint);
     const post = async <T>(endpoint: string, data: unknown): Promise<T> => request<T>("POST", endpoint, data);
     const put = async <T>(endpoint: string, data: unknown): Promise<T> => request<T>("PUT", endpoint, data);
-    const deleteRequest = async <T>(endpoint: string): Promise<T> => request<T>("DELETE", endpoint);
+    const deleteRequest = async <T>(endpoint: string, data: unknown): Promise<T> => request<T>("DELETE", endpoint,data);
     const self = {
         withHeader,
         withBaseUrl,

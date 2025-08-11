@@ -239,3 +239,4 @@ function updateChart() {
 <style scoped>
 /* 图表容器样式 */
 </style>
+

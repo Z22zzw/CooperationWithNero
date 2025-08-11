@@ -23,7 +23,7 @@ defineProps<{
           <span>
             <i class="fas fa-home"></i>
           </span>
-          dashboard
+          主页
         </h3>
       </a>
     </div>

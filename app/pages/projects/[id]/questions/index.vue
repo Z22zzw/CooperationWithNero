@@ -6,18 +6,14 @@ import {ref, watch} from 'vue'
 import ModalComponent from '~/components/ModalComponent.vue'
 import {Fetcher} from "~/composables/fetcher";
 import {v4 as uuidv4} from 'uuid';
-
 const showModal = ref(false)
-
 // AI 输入
 const aiKeyword = ref('');
 const customQuestion = ref('');
 const sidePanelVisible = ref(false);
-
 const aiSuggestions = ref<string[]>([]);
 // 打开右侧子弹窗
 const isloading=ref(true)
-const isSubmit=ref<any>(null)
 const openSidePanel = async () => {
   sidePanelVisible.value = true;
   isloading.value=true;
@@ -48,7 +44,8 @@ const selectSuggestion = (suggestion: string) => {
 const handleConfirm = (question: string) => {
   showModal.value = false;
   const ProjectId=useRoute().params.id;
-  isSubmit.value=Fetcher()
+  const id=uuidv4()
+  Fetcher()
       .withHeader({
         "Content-Type": "application/json",
       })
@@ -56,7 +53,7 @@ const handleConfirm = (question: string) => {
         project_id: ProjectId,
         issueList: [
           {
-            id: uuidv4(),
+            id: id,
             name: question,
             mention_times: 0,
             citations: 0,
@@ -64,6 +61,7 @@ const handleConfirm = (question: string) => {
           }
         ]
       })
+      window.location.reload()
 };
 // 在模态框关闭时重置侧边面板
 watch(showModal, (newVal) => {
@@ -82,9 +80,10 @@ const applySuggestion = () => {
     const ProjectId=useRoute().params.id;
     const addIssues=[];
     for (const Issue of aiSuggestions.value) {
+      const id=uuidv4()
       addIssues.push(
         {
-          id: uuidv4(),
+          id: id,
           name:Issue,
           mention_times: 0,
           citations: 0,
@@ -92,7 +91,7 @@ const applySuggestion = () => {
         }
       );
     }
-    isSubmit.value=Fetcher().withBaseUrl("http://192.168.0.10:8080").withHeader({
+    Fetcher().withBaseUrl("http://192.168.0.10:8080").withHeader({
       "content-type": "application/json"
     }).put<{
       project_id:string,
@@ -108,7 +107,24 @@ const applySuggestion = () => {
     sidePanelVisible.value = false;
     showModal.value = false;
   }
+  window.location.reload()
 };
+// 接收子组件传来的 id 数组
+const selectedIds = ref<string[]>([]);
+
+const onSelectionChanged = (ids: string[]) => {
+  selectedIds.value = ids;
+};
+
+const handleDelete = () => {
+  Fetcher()
+      .withBaseUrl("http://192.168.0.10:8080")
+      .withHeader({"content-type": "application/json"})
+      .delete("/api/deleteIssues",{
+        id:selectedIds.value
+      })
+  window.location.reload()
+}
 </script>
 
 <template>
@@ -122,7 +138,17 @@ const applySuggestion = () => {
           </span>
           <span class="btn-text">添加新问题</span>
         </button>
+        <button
+            class="elegant-button delete-button"
+            @click="handleDelete"
+        >
+    <span class="icon-wrapper">
+      <i class="fas fa-trash-alt"></i>
+    </span>
+          <span class="btn-text">删除问题</span>
+        </button>
       </div>
+
     </div>
 
     <div class="issue-container">
@@ -225,7 +251,7 @@ const applySuggestion = () => {
     </Teleport>
   </div>
   <div class="issue-container">
-    <issue-table :key="isSubmit"/>
+    <issue-table @selection-changed="onSelectionChanged"/>
   </div>
 </template>
 

@@ -1,7 +1,6 @@
 ﻿<template>
   <div class="container">
     <el-table
-        v-show="!isLoading"
         :data="displayData"
         style="width: 100%"
         :header-cell-style="{
@@ -18,6 +17,13 @@
       <!-- 修复多选列 -->
       <el-table-column type="selection" width="50" align="center" />
 
+      <el-table-column prop="issue" label="id" min-width="300" v-if="false">
+        <template #default="scope">
+          <div class="issue-cell">
+            <span class="issue-text">{{ scope.row.id }}</span>
+          </div>
+        </template>
+      </el-table-column>
       <!-- 问题列 -->
       <el-table-column prop="issue" label="问题" min-width="300">
         <template #default="scope">
@@ -75,7 +81,6 @@
       </el-table-column>
     </el-table>
     <el-pagination
-        v-show="!isLoading"
         background
         layout="total, sizes, prev, pager, next, jumper"
         :total="total"
@@ -90,11 +95,11 @@
   <!-- 抽屉组件 -->
   <el-drawer
       v-model="drawerVisible"
-      title="问题答案详情"
       direction="rtl"
       size="40%"
       :with-header="true"
       class="drawer-container"
+      @close="handleDrawerClose"
   >
     <!-- 内容区域 -->
     <div class="content-wrapper">
@@ -106,8 +111,13 @@
 <!--        <h3>问题答案</h3>-->
         <tabcard :tabs="tabs"
                   :active-value="currentTab"
-                  @update:active-value="currentTab = $event"/>
-        <div v-if="currentTab=='responses'" class="answer-content" v-html="questionData.answer"></div>
+                  @update:active-value="currentTab = $event"
+                  @click="askAi(currentTab)"
+        />
+        <div v-if="isStreaming" class="streaming-indicator">
+          <i class="el-icon-loading"></i> 努力回答中... (已接收 {{ receivedChars }} 字符)
+        </div>
+        <div class="answer-content" v-html="questionData.answer"></div>
       </div>
 
       <!-- 引用统计 -->
@@ -135,17 +145,152 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import {computed, ref} from 'vue';
+
+import MarkdownIt from "markdown-it";
+import {Fetcher} from "~/composables/fetcher";
+const receivedChars=ref<number>(0)
 const currentPage = ref(1);
+const isStreaming = ref(false);
+const md = new MarkdownIt();
+
+const streamingController = ref<AbortController | null>(null);
+// 修改后的 askAi 函数
+const askAi = async (value: string) => {
+  if (value === 'citations') return;
+
+  // 如果已有流式传输在运行，先取消它
+  if (streamingController.value) {
+    streamingController.value.abort();
+  }
+
+  isLoading.value = true;
+  isStreaming.value = true;
+  receivedChars.value = 0;
+  questionData.value.rawAnswer = ''; // 存储原始文本
+  questionData.value.answer = md.render('AI正在思考中...'); // 初始提示
+  await nextTick();
+
+  try {
+    // 创建新的 AbortController
+    const controller = new AbortController();
+    streamingController.value = controller;
+
+    const response = await fetch(
+        `http://192.168.0.10:8080/api/askaiai?message=${encodeURIComponent(clickedRowData.value?.name || '')}`,
+        { signal: controller.signal }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP错误! 状态码: ${response.status}`);
+    }
+
+    if (!response.body) {
+      throw new Error('当前浏览器不支持流式API');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let accumulatedData = '';
+    let contentAvailable = false;
+
+    // 处理流式数据
+    while (true) {
+      const { done, value: chunk } = await reader.read();
+      if (done) break;
+
+      // 将二进制数据转换为文本
+      const textChunk = decoder.decode(chunk, { stream: true });
+      accumulatedData += textChunk;
+      receivedChars.value += textChunk.length;
+
+      // 处理服务器返回的特定格式
+      const lines = accumulatedData.split('\n');
+
+      // 保留最后一行（可能是不完整的）
+      accumulatedData = lines.pop() || '';
+
+      // 处理每一行
+      for (const line of lines) {
+        if (line.startsWith('data:')) {
+          const content = line.substring(5).trim();
+          contentAvailable = true;
+
+          // 更新原始文本
+          questionData.value.rawAnswer += content;
+
+          // 实时更新显示内容
+          questionData.value.answer = md.render(questionData.value.rawAnswer);
+
+          // 确保视图更新
+          await nextTick();
+        }
+      }
+    }
+
+    // 处理剩余数据
+    if (accumulatedData) {
+      if (accumulatedData.startsWith('data:')) {
+        const content = accumulatedData.substring(5).trim();
+        questionData.value.rawAnswer += content;
+        questionData.value.answer = md.render(questionData.value.rawAnswer);
+        await nextTick();
+      }
+    }
+
+    // 如果没有任何有效内容
+    if (!contentAvailable) {
+      throw new Error('服务器返回了响应但没有实际内容');
+    }
+
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.log('用户取消了请求');
+    } else {
+      console.error('流处理错误:', error);
+
+      // 显示已接收的内容
+      if (questionData.value.rawAnswer) {
+        questionData.value.answer = md.render(
+            questionData.value.rawAnswer +
+            '\n\n<错误> 数据流处理不完整: ' + error
+        );
+      } else {
+        questionData.value.answer = '<p>⚠️ 获取回答时出错，请重试</p>';
+      }
+    }
+  } finally {
+    isLoading.value = false;
+    isStreaming.value = false;
+    streamingController.value = null;
+  }
+};
+
+// 在抽屉关闭时取消流式传输
+const handleDrawerClose = () => {
+  if (streamingController.value) {
+    streamingController.value.abort();
+  }
+  drawerVisible.value = false;
+};
+
+
 const pageSize = ref(10);
 const total = ref(0);
 const isLoading=ref(true);
 const displayData = ref<IssuesDetails[]>([]);
+
+const selectedIds = ref<string[]>([]);
+
 const tabs = ref([
-  { name: '响应', value: 'responses' },
+  {name: "deepseek", value: 'deepseek' },
+  {name: "豆包", value: 'doubao' },
+  {name:"通义千问", value: 'tongyiqianwen' },
+  {name: "文心一言",value: "wenxinyiyan"},
   { name: '引文', value: 'citations' }
 ])
-const currentTab = ref('responses')
+
+const currentTab = ref('deepseek')
 const drawerVisible = ref(false);
 interface IssuesDetails {
   id: string;
@@ -164,30 +309,51 @@ const platform={
   ]
 }
 const clickedRowData = ref<IssuesDetails>();
+const questionData = ref({
+  title: 'UNKNOW',
+  rawAnswer: 'UNKNOW',
+  answer: md.render(`UNKNOW`),
+  success: true,
+  referenceCount: 0,
+  weeklyReferences: 0,
+  maxReferences: 0
+});
 const handleRowClick=(row: IssuesDetails)=>{
   clickedRowData.value = row;
   console.log('点击的行数据:', row);
-  // 这里可添加后续处理逻辑，如打开详情抽屉等
+  questionData.value=
+      {
+        title: row.name,
+        rawAnswer: "UNKNOW",
+        answer: md.render(`UNKNOW`),
+        success: true,
+        referenceCount: row.citations,
+        weeklyReferences: row.mention_times,
+        maxReferences: 500
+      }
+  askAi("deepseek")
   drawerVisible.value = true;
 }
 const data = ref<IssuesDetails[]>([]);
-Fetcher().withHeader({
-  "Content-Type": 'application/json',
-}).withBaseUrl("http://192.168.0.10:8080").post<IssuesDetails[]>("/api/issues",
-    {
-      project_id:useRoute().params.id
-    }
-).then((result) => {
-  data.value = result
-  total.value = result.length
-  isLoading.value = false;
-  updateDisplayData()
-}).catch((error) => {
-  console.error('请求失败:', error)
-  data.value = []
-  total.value = 0
-});
-total.value = data.value.length;
+const fetchData = () => {
+  Fetcher().withHeader({
+    "Content-Type": 'application/json',
+  }).withBaseUrl("http://192.168.0.10:8080").post<IssuesDetails[]>("/api/issues",
+      {
+        project_id:useRoute().params.id
+      }
+  ).then((result) => {
+    data.value = result
+    total.value = result.length
+    updateDisplayData()
+
+  }).catch((error) => {
+    console.error('请求失败:', error)
+    data.value = []
+    total.value = 0
+  });
+  total.value = data.value.length;
+}
 const platformNames: Record<string, string> = {
   deepseek: "deepseek",
   doubao: "豆包",
@@ -195,10 +361,8 @@ const platformNames: Record<string, string> = {
   chatgpt: "chatGPT",
   tongyi: "通义千问",
 };
-
 // 获取平台名称
 const getPlatformName = (icon: string): string => platformNames[icon] || icon;
-
 // 获取图标 URL
 const getIconUrl = (icon: string): string => {
   const icons: Record<string, string> = {
@@ -210,61 +374,24 @@ const getIconUrl = (icon: string): string => {
   };
   return icons[icon] || 'https://via.placeholder.com/20';
 };
-
 // 行类名
 const tableRowClassName = ({ rowIndex }: { rowIndex: number }) =>
     rowIndex % 2 === 0 ? 'table-row-even' : '';
-
+const emit = defineEmits<{
+  (e: 'selection-changed', ids: string[]): void
+}>();
 // 处理选中事件
-const handleSelectionChange = (val: IssuesDetails[]) => {
-  console.log('Selected rows:', val);
+const handleSelectionChange = (selection: any[]) => {
+  selectedIds.value = selection.map(item => item.id);
+  // 实时将选中的 id 数组传给父组件
+  emit('selection-changed', selectedIds.value);
 };
-
 // 动态计算柱状图宽度 (0-10次为100%)
 const calculateBarWidth = (value: number): number => {
   const max = 10; // 最大显示值
   return Math.min(100, (value / max) * 100);
 };
-import {computed } from 'vue';
-
-import MarkdownIt from "markdown-it";
-const md = new MarkdownIt()
 // 问题数据（实际应用中应通过props传入）
-
-const questionData = ref({
-  title: '如何处理Vue3中的响应式数据失效问题？',
-  answer: md.render(`在 Vue 3 中，响应式系统得到了显著的改进，主要是通过使用 Proxy 对象来替代 Vue 2 中的 Object.defineProperty 方法。尽管如此，在某些情况下，你可能会遇到响应式数据失效的问题。以下是一些常见原因及其解决方法：
-
-1. **确保正确地创建响应式数据**：
-   - 使用 \`reactive()\` 函数将对象转换为响应式对象。
-   - 使用 \`ref()\` 函数创建一个包含值的响应式引用（对于基本数据类型）。
-
-2. **解构导致的响应式丢失**：
-   - 当从响应式对象中解构属性时，会丢失响应性。为了解决这个问题，可以使用 \`toRefs()\` 将响应式对象的所有属性都转换为响应式的 ref。
-
-3. **数组索引和长度的修改**：
-   - Vue 3 的响应式系统能够检测到直接通过索引或修改数组长度对数组进行的变更。但是，如果你直接替换整个数组或者对数组内部元素进行重新赋值操作，可能需要手动触发更新。
-
-4. **深层响应式问题**：
-   - Vue 3 默认情况下会对对象进行深度监听，但如果动态添加新的根级属性，则需要使用 \`reactive\` 或者 \`ref\` 来包裹这些新属性以保持其响应性。
-
-5. **使用计算属性和侦听器**：
-   - 如果你的应用逻辑较为复杂，考虑使用 \`computed\` 创建计算属性，以及 \`watch\` 来监听特定的数据变化。
-
-6. **检查是否正确使用了 \`.value\`**：
-   - 当你在模板外使用 \`ref\` 时，记得访问其值需要加上 \`.value\`。在模板内则不需要这样做，Vue 会自动解包 \`ref\`。
-
-7. **避免在 setup 函数外部改变响应式状态**：
-   - 确保所有的状态更改都在 Vue 的响应式系统内完成，例如不要在全局作用域或非 Vue 管理的函数中直接修改状态。
-
-如果上述方法都不能解决问题，那么可能需要进一步调试代码，查看控制台输出，确认是否存在任何警告或错误信息，这些往往能提供解决问题的线索。同时，也可以参考 Vue 3 的官方文档或社区资源获取更多帮助。`),
-  success: true,
-  referenceCount: 42,
-  weeklyReferences: 8,
-  maxReferences: 50
-});
-
-
 // 计算引用百分比
 const referencePercentage = computed(() => {
   return Math.min(100, Math.round(
@@ -277,7 +404,6 @@ const handleSizeChange = (size: number) => {
   currentPage.value = 1;
   updateDisplayData();
 };
-
 // 页码变化处理
 const handleCurrentChange = (page:number) => {
   currentPage.value = page;
@@ -288,10 +414,23 @@ const updateDisplayData = () => {
   const end = start + pageSize.value;
   displayData.value = data.value.slice(start, end);
 };
+fetchData();
 </script>
 
 <style scoped>
+.cursor {
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  background-color: currentColor;
+  animation: blink 1s infinite;
+  vertical-align: middle;
+}
 
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
 .container {
   width: 100%;
   overflow-x: auto;
