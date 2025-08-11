@@ -1,7 +1,8 @@
 ﻿<template>
   <div class="container">
     <el-table
-        :data="data"
+        v-show="!isLoading"
+        :data="displayData"
         style="width: 100%"
         :header-cell-style="{
         background: '#f8f9fa',
@@ -12,9 +13,7 @@
         :cell-style="{ color: '#555' }"
         :row-class-name="tableRowClassName"
         @selection-change="handleSelectionChange"
-        @row-click="()=>{
-          drawerVisible=true
-        }"
+        @row-click="handleRowClick"
     >
       <!-- 修复多选列 -->
       <el-table-column type="selection" width="50" align="center" />
@@ -23,7 +22,7 @@
       <el-table-column prop="issue" label="问题" min-width="300">
         <template #default="scope">
           <div class="issue-cell">
-            <span class="issue-text">{{ scope.row.issue }}</span>
+            <span class="issue-text">{{ scope.row.name }}</span>
           </div>
         </template>
       </el-table-column>
@@ -33,7 +32,7 @@
         <template #default="scope">
           <div class="platform-icons">
             <el-tooltip
-                v-for="(icon, index) in scope.row.platform.icons"
+                v-for="(icon, index) in platform.icons"
                 :key="index"
                 :content="getPlatformName(icon)"
                 placement="top"
@@ -49,9 +48,9 @@
         <template #default="scope">
           <div class="mention-cite-container">
             <div class="bar-container">
-              <div class="bar-fill" :style="{ width: `${calculateBarWidth(scope.row.mentions.times)}%` }"></div>
+              <div class="bar-fill" :style="{ width: `${calculateBarWidth(scope.row.mention_times)}%` }"></div>
             </div>
-            <span class="count-label">{{ scope.row.mentions.times }}</span>
+            <span class="count-label">{{ scope.row.mention_times }}</span>
           </div>
         </template>
       </el-table-column>
@@ -61,10 +60,9 @@
         <template #default="scope">
           <div class="mention-cite-container">
             <div class="bar-container">
-              <!-- 修复数据类型不一致问题 -->
-              <div class="bar-fill cite-fill" :style="{ width: `${calculateBarWidth(Number(scope.row.cite.times))}%` }"></div>
+              <div class="bar-fill cite-fill" :style="{ width: `${calculateBarWidth(scope.row.citations)}%` }"></div>
             </div>
-            <span class="count-label">{{ scope.row.cite.times }}</span>
+            <span class="count-label">{{ scope.row.citations }}</span>
           </div>
         </template>
       </el-table-column>
@@ -76,6 +74,18 @@
         </template>
       </el-table-column>
     </el-table>
+    <el-pagination
+        v-show="!isLoading"
+        background
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="total"
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        class="pagination"
+    />
   </div>
   <!-- 抽屉组件 -->
   <el-drawer
@@ -93,16 +103,11 @@
 
       <!-- 答案内容 -->
       <div class="answer-section">
-        <h3>问题答案</h3>
-        <div class="answer-content" v-html="questionData.answer"></div>
-      </div>
-
-      <!-- 解决结果 -->
-      <div class="result-section">
-        <h3>解决结果</h3>
-        <div :class="['result-status', questionData.success ? 'success' : 'error']">
-          {{ questionData.success ? '解决成功 ✓' : '解决失败 ✗' }}
-        </div>
+<!--        <h3>问题答案</h3>-->
+        <tabcard :tabs="tabs"
+                  :active-value="currentTab"
+                  @update:active-value="currentTab = $event"/>
+        <div v-if="currentTab=='responses'" class="answer-content" v-html="questionData.answer"></div>
       </div>
 
       <!-- 引用统计 -->
@@ -131,75 +136,64 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-
-interface PlatformData {
-  icons: string[];
-  result: string;
-}
-
-interface MentionData {
-  date: string;
-  times: number;
-}
-
-interface CiteData {
-  date: string;
-  times: number | string; // 修复数据类型问题
-}
-
+const currentPage = ref(1);
+const pageSize = ref(10);
+const total = ref(0);
+const isLoading=ref(true);
+const displayData = ref<IssuesDetails[]>([]);
+const tabs = ref([
+  { name: '响应', value: 'responses' },
+  { name: '引文', value: 'citations' }
+])
+const currentTab = ref('responses')
+const drawerVisible = ref(false);
 interface IssuesDetails {
   id: string;
-  issue: string;
-  platform: PlatformData;
-  mentions: MentionData;
-  cite: CiteData;
+  name: string;
+  mention_times: number;
+  citations: number;
   updated_at: string;
-  checked?: boolean;
 }
 
-const data = ref<IssuesDetails[]>([
-  {
-    id: '1',
-    issue: '项目管理中频繁更改优先级会产生什么后果？',
-    platform: {
-      icons: ['weibo', 'zhihu', 'douban'],
-      result: 'positive'
-    },
-    mentions: {
-      date: '2023-10-01',
-      times: 7
-    },
-    cite: {
-      date: '2023-10-01',
-      times: 5 // 修复为数字类型
-    },
-    updated_at: '2天前'
-  },
-  {
-    id: '2',
-    issue: 'AI 生成内容是否应标注来源？',
-    platform: {
-      icons: ['weibo', 'bilibili'],
-      result: 'neutral'
-    },
-    mentions: {
-      date: '2023-10-02',
-      times: 3
-    },
-    cite: {
-      date: '2023-10-02',
-      times: 8 // 修复为数字类型
-    },
-    updated_at: '1天前'
-  }
-]);
-
+const platform={
+  icons:[
+      "deepseek",
+      "doubao",
+      "wenxinyiyan",
+      "tongyi"
+  ]
+}
+const clickedRowData = ref<IssuesDetails>();
+const handleRowClick=(row: IssuesDetails)=>{
+  clickedRowData.value = row;
+  console.log('点击的行数据:', row);
+  // 这里可添加后续处理逻辑，如打开详情抽屉等
+  drawerVisible.value = true;
+}
+const data = ref<IssuesDetails[]>([]);
+Fetcher().withHeader({
+  "Content-Type": 'application/json',
+}).withBaseUrl("http://192.168.0.10:8080").post<IssuesDetails[]>("/api/issues",
+    {
+      project_id:useRoute().params.id
+    }
+).then((result) => {
+  data.value = result
+  total.value = result.length
+  isLoading.value = false;
+  updateDisplayData()
+}).catch((error) => {
+  console.error('请求失败:', error)
+  data.value = []
+  total.value = 0
+});
+total.value = data.value.length;
 const platformNames: Record<string, string> = {
-  weibo: '微博',
-  zhihu: '知乎',
-  douban: '豆瓣',
-  bilibili: 'B站',
-  tieba: '贴吧'
+  deepseek: "deepseek",
+  doubao: "豆包",
+  wenxinyiyan: "文心一言",
+  chatgpt: "chatGPT",
+  tongyi: "通义千问",
 };
 
 // 获取平台名称
@@ -208,11 +202,11 @@ const getPlatformName = (icon: string): string => platformNames[icon] || icon;
 // 获取图标 URL
 const getIconUrl = (icon: string): string => {
   const icons: Record<string, string> = {
-    weibo: 'https://cdn.icon-icons.com/icons2/2108/PNG/512/weibo_icon_130777.png',
-    zhihu: 'https://cdn.icon-icons.com/icons2/2108/PNG/512/zhihu_icon_130776.png',
-    douban: 'https://cdn.icon-icons.com/icons2/2108/PNG/512/douban_icon_130775.png',
-    bilibili: 'https://cdn.icon-icons.com/icons2/2108/PNG/512/bilibili_icon_130774.png',
-    tieba: 'https://cdn.icon-icons.com/icons2/2108/PNG/512/tieba_icon_130773.png'
+    deepseek: "https://www.deepseek.com/favicon.ico",
+    doubao: "https://lf-flow-web-cdn.doubao.com/obj/flow-doubao/doubao/logo-doubao-overflow.png",
+    wenxinyiyan: "https://ts3.tc.mm.bing.net/th/id/ODF.E7UidNlvlYHWxOkPLoQCug?w=32&h=32&qlt=90&pcl=fffffa&o=6&pid=1.2",
+    chatgpt: "https://chat.openai.com/favicon.ico",
+    tongyi: "https://img.alicdn.com/imgextra/i4/O1CN01EfJVFQ1uZPd7W4W6i_!!6000000006051-2-tps-112-112.png",
   };
   return icons[icon] || 'https://via.placeholder.com/20';
 };
@@ -233,12 +227,13 @@ const calculateBarWidth = (value: number): number => {
 };
 import {computed } from 'vue';
 
-const drawerVisible = ref(false);
-
+import MarkdownIt from "markdown-it";
+const md = new MarkdownIt()
 // 问题数据（实际应用中应通过props传入）
+
 const questionData = ref({
   title: '如何处理Vue3中的响应式数据失效问题？',
-  answer: `在 Vue 3 中，响应式系统得到了显著的改进，主要是通过使用 Proxy 对象来替代 Vue 2 中的 Object.defineProperty 方法。尽管如此，在某些情况下，你可能会遇到响应式数据失效的问题。以下是一些常见原因及其解决方法：
+  answer: md.render(`在 Vue 3 中，响应式系统得到了显著的改进，主要是通过使用 Proxy 对象来替代 Vue 2 中的 Object.defineProperty 方法。尽管如此，在某些情况下，你可能会遇到响应式数据失效的问题。以下是一些常见原因及其解决方法：
 
 1. **确保正确地创建响应式数据**：
    - 使用 \`reactive()\` 函数将对象转换为响应式对象。
@@ -262,12 +257,13 @@ const questionData = ref({
 7. **避免在 setup 函数外部改变响应式状态**：
    - 确保所有的状态更改都在 Vue 的响应式系统内完成，例如不要在全局作用域或非 Vue 管理的函数中直接修改状态。
 
-如果上述方法都不能解决问题，那么可能需要进一步调试代码，查看控制台输出，确认是否存在任何警告或错误信息，这些往往能提供解决问题的线索。同时，也可以参考 Vue 3 的官方文档或社区资源获取更多帮助。`,
+如果上述方法都不能解决问题，那么可能需要进一步调试代码，查看控制台输出，确认是否存在任何警告或错误信息，这些往往能提供解决问题的线索。同时，也可以参考 Vue 3 的官方文档或社区资源获取更多帮助。`),
   success: true,
   referenceCount: 42,
   weeklyReferences: 8,
   maxReferences: 50
 });
+
 
 // 计算引用百分比
 const referencePercentage = computed(() => {
@@ -275,9 +271,27 @@ const referencePercentage = computed(() => {
       (questionData.value.referenceCount / questionData.value.maxReferences) * 100
   ));
 });
+// 每页条数变化处理
+const handleSizeChange = (size: number) => {
+  pageSize.value = size;
+  currentPage.value = 1;
+  updateDisplayData();
+};
+
+// 页码变化处理
+const handleCurrentChange = (page:number) => {
+  currentPage.value = page;
+  updateDisplayData();
+};
+const updateDisplayData = () => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  displayData.value = data.value.slice(start, end);
+};
 </script>
 
 <style scoped>
+
 .container {
   width: 100%;
   overflow-x: auto;

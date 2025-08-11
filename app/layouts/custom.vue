@@ -6,6 +6,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { ProjectDetails } from "@/interface/ProjectDetails"
+import {Fetcher} from "~/composables/fetcher";
 
 const route = useRoute();
 const router = useRouter();
@@ -54,12 +55,10 @@ onMounted(async () => {
 // 获取项目数据
 async function fetchProjectData() {
   try {
-    const res = await $fetch<{
+    const res = await Fetcher().get<{
       options: {name: string, value: string}[],
       demoProject: ProjectDetails
-    }>(`${useRuntimeConfig().public.apiBase}/api/projectDetails/${route.params.id}`, {
-      method: "GET",
-    })
+    }>(`/api/projectDetails/${route.params.id}`)
     options.value = res.options
     demoProject.value = res.demoProject
   } catch (error) {

@@ -13,48 +13,54 @@ const customQuestion = ref('');
 const sidePanelVisible = ref(false);
 
 // 模拟 AI 建议
-const aiSuggestions = ref<string[]>([
-  'AI 生成内容是否应强制标注来源？',
-  '频繁变更优先级会影响团队效率吗？',
-  '远程协作如何保证沟通质量？',
-  '敏捷开发中如何管理技术债务？'
-]);
-
+const aiSuggestions = ref<string[]>([]);
+import {Fetcher} from "~/composables/fetcher";
 // 打开右侧子弹窗
-const openSidePanel = () => {
-  if (!aiKeyword.value.trim()) {
-    aiKeyword.value = '热门话题';
-  }
+const isloading=ref(true)
+const openSidePanel = async () => {
   sidePanelVisible.value = true;
-};
+  isloading.value=true;
+  if (!aiKeyword.value.trim()) {
+    aiKeyword.value = '生成式搜索引擎';
+  }
+  var formData = new FormData();
+  formData.append("question", aiKeyword.value);
+  try {
+    const result = await Fetcher()
+        .withBaseUrl("http://192.168.0.10:8080")
+        .post<{ data: string[] }>("/questionAI", formData);
 
+    aiSuggestions.value = result.data;
+
+    isloading.value = false;
+    console.log('aiSuggestions:', aiSuggestions.value);
+  } catch (error) {
+    console.error('请求失败:', error);
+    isloading.value = false;
+  }
+};
 // 选择建议
 const selectSuggestion = (suggestion: string) => {
   customQuestion.value = suggestion;
   sidePanelVisible.value = false;
 };
-
 const emit = defineEmits<{
   (e: 'confirm', question: string): void;
 }>();
-
 const handleConfirm = (question: string) => {
   emit('confirm', question);
   showModal.value = false;
 };
-
 // 在模态框关闭时重置侧边面板
 watch(showModal, (newVal) => {
   if (!newVal) {
     sidePanelVisible.value = false;
   }
 });
-
 // 删除建议项
 const removeSuggestion = (index: number) => {
   aiSuggestions.value.splice(index, 1);
 };
-
 // 应用建议项（提交）
 const applySuggestion = () => {
   if (aiSuggestions.value.length != 0) {
@@ -144,13 +150,15 @@ const applySuggestion = () => {
             </div>
 
             <div class="side-panel-body">
+              <loading v-if="isloading"/>
               <div
                   v-for="(suggestion, index) in aiSuggestions"
                   :key="index"
                   class="suggestion-item"
                   @click="selectSuggestion(suggestion)"
+                  v-else
               >
-                <div class="suggestion-content">
+                <div class="suggestion-content" >
                   {{ suggestion }}
                 </div>
                 <button

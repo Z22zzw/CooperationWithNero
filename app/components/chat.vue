@@ -256,9 +256,6 @@ const handleSubmit = async () => {
       isError: false,
       timestamp: getCurrentTime()
     });
-
-    // 更新用户消息状态为已读
-    updateLastUserMessageStatus('read');
   } catch (error) {
     handleError();
   } finally {
@@ -284,13 +281,6 @@ const removeLastMessage = () => {
   messages.value.pop();
 };
 
-// 更新最后一条用户消息状态
-const updateLastUserMessageStatus = (status: string) => {
-  const userMsgIndex = messages.value.findLastIndex(m => m.sender === 'user');
-  if (userMsgIndex !== -1) {
-    messages.value[userMsgIndex].status = status;
-  }
-};
 
 // 获取当前时间
 const getCurrentTime = () => {

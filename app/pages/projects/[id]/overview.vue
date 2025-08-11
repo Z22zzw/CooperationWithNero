@@ -127,17 +127,14 @@ function getCurrentDate() {
   const day = String(today.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
-
+import {Fetcher} from "~/composables/fetcher";
 // 获取项目数据
 async function fetchProjectData() {
   try {
-    const res = await $fetch<{
+    const res = await Fetcher().get<{
       options: {name: string, value: string}[],
       demoProject: ProjectDetails
-    }>(`${useRuntimeConfig().public.apiBase}/api/projectDetails/${route.params.id}`, {
-      method: "GET",
-    })
-
+    }>(`/api/projectDetails/${route.params.id}`)
     options.value = res.options
     demoProject.value = res.demoProject
     if (res.options.length > 0) {

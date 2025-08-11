@@ -1,5 +1,4 @@
 ﻿<script setup lang="ts">
-const apiBaseURL = useRuntimeConfig().public.apiBase;
 interface card {
   id: string,
   name: string,
@@ -18,13 +17,13 @@ const cards =ref<card[]>([])
 definePageMeta({
   layout: 'default'
 })
-// 在组件挂载后获取数据
+
+import {Fetcher} from "~/composables/fetcher"
 onMounted(async () => {
   try {
-    cards.value = await $fetch<card[]>(`${apiBaseURL}/api/projectDetails`) // 将获取的数据赋值给 ref
-    console.log(cards.value)
-  } catch (error) {
-    console.error('获取菜单数据失败:', error)
+    cards.value = await Fetcher().get<card[]>(`/api/projectDetails`);
+  } catch (err) {
+    console.log(err)
   }
 })
 </script>
