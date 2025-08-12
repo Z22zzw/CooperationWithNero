@@ -21,7 +21,7 @@ interface Props {
 
 // 默认值
 withDefaults(defineProps<Props>(), {
-  width: '100%',
+  width: '650px',
   height: '400px'
 })
 

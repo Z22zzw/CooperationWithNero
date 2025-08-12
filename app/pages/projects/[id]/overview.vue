@@ -127,34 +127,28 @@ function getCurrentDate() {
   const day = String(today.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
-import {Fetcher} from "~/composables/fetcher";
 // 获取项目数据
-async function fetchProjectData() {
-  try {
-    const res = await Fetcher().get<{
-      options: {name: string, value: string}[],
-      demoProject: ProjectDetails
-    }>(`/api/projectDetails/${route.params.id}`)
-    options.value = res.options
-    demoProject.value = res.demoProject
-    if (res.options.length > 0) {
-      selectedOption.value = res.options[0]!.value
-    }
-    console.log(route.params.id)
-  } catch (error) {
-    console.error("获取项目数据失败:", error)
-  }
-}
-
-// 初始获取数据
-fetchProjectData()
-
-// 监听路由参数变化
-watch(() => route.params.id, (newId) => {
-    fetchProjectData()
-    console.log(12345678)
+const { data, pending, error, refresh } = await useFetch<ProjectDetails>(() => `/api/projectDetails?projectId=${route.params.id}`, {
+  baseURL:`http://121.41.121.90:8080e`, // 如果你的 API 不在同域
+  key: `project-details-${route.params.id}`, // 缓存 key，避免不同 id 混淆
+  watch: [() => route.params.id] // 路由变化时自动刷新
 })
-
+watch(
+    () => data.value,
+    (newData) => {
+      if (newData) {
+        options.value =[
+          {name:"1",
+            value:"1"
+          }
+        ]
+        demoProject.value = newData;
+        selectedOption.value =options.value[0]!.value
+      }
+      console.log(demoProject.value)
+    },
+    { immediate: true }
+)
 // 卡片交互函数保持不变
 const toggleCardActive = (cardType: string) => {
   activeCard.value = activeCard.value === cardType ? null : cardType
@@ -306,8 +300,8 @@ const toggleCardActive = (cardType: string) => {
 
 .data-show {
   flex: 1;
-  min-width: 300px;
-  transform: scale(0.92);
+  min-width: 100%;
+  transform: scale(100%);
   transform-origin: top left;
 }
 
@@ -350,5 +344,51 @@ const toggleCardActive = (cardType: string) => {
 
 .dark .card-footer {
   color: #34d399;
+}
+.container {
+  max-width: 100%; /* 改为全宽 */
+  padding: 1.5rem; /* 使用相对单位 */
+}
+
+
+/* 修改最小宽度 */
+.data-show, .mention-contain {
+  min-width: unset; /* 移除固定限制 */
+  width: 100%; /* 添加弹性宽度 */
+}
+
+/* 头部控件响应式 */
+.header-controls {
+  gap: 1rem; /* 改用相对单位 */
+  flex-wrap: wrap; /* 允许换行 */
+}
+
+/* 卡片网格响应式 */
+.card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* 弹性列数 */
+}
+
+/* 图表容器优化 */
+.chart-container {
+  flex-wrap: wrap; /* 允许换行 */
+}
+
+/* 添加响应式断点 */
+@media (max-width: 1024px) {
+  .header-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-picker,
+  .select-container {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* 使用视口单位 */
+.card-value {
+  font-size: clamp(1.5rem, 4vw, 2rem); /* 响应式字体 */
 }
 </style>

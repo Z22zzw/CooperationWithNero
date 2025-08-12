@@ -1,5 +1,7 @@
 ﻿<script setup lang="ts">
-interface card {
+import {ref} from "vue";
+
+export interface card {
   id: string,
   name: string,
   issues: number,
@@ -17,15 +19,58 @@ const cards =ref<card[]>([])
 definePageMeta({
   layout: 'default'
 })
-
-import {Fetcher} from "~/composables/fetcher"
-onMounted(async () => {
-  try {
-    cards.value = await Fetcher().get<card[]>(`/api/projectDetails`);
-  } catch (err) {
-    console.log(err)
+const apiBase="http://121.41.121.90:8080"
+const { data, pending, error, refresh } = await useFetch<{
+  menu: {
+    projects: card[]
+    domains: { id: string; name: string }[]
   }
+  profiles: {
+    icon?: string
+    name: string
+    email: string
+  }
+}>('/api/base', {
+  baseURL: apiBase,
+  method: 'POST',
+  body: { userid: 'admin' },
+  key: 'dashboard-data'
 })
+
+watch(
+    () => data.value,
+    (newData) => {
+      if (newData) {
+        cards.value = newData.menu.projects
+      }
+    },
+    { immediate: true } // 立即执行一次
+)
+import {v4 as uuidv4} from "uuid";
+const projectName=ref("");
+const createNewProject=async ()=>{
+  try {
+    const response = await $fetch('/api/addProject', {
+      method: 'PUT',
+      baseURL:apiBase, // 相当于 withBaseUrl
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: {
+        userid: 'admin',
+        project: {
+          id: uuidv4(),
+          name: projectName.value
+        }
+      }
+    })
+    console.log('创建成功:', response)
+    await refreshNuxtData('dashboard-data')
+    await refreshNuxtData('user-menu-data')
+  } catch (error) {
+    console.error('创建失败:', error)
+  }
+}
 </script>
 
 <template>
@@ -37,10 +82,23 @@ onMounted(async () => {
     <div class="main">
       <div class="header-row">
         <h2>你的项目</h2>
-        <a href="#" class="add-project">
-          <i class="fas fa-plus add-icon"/>
-          添加新项目
-        </a>
+        <add-new-project-0r-domain title="添加新项目" @submit="createNewProject">
+          <template v-slot:trigger="{open}">
+            <a href="#" class="add-project"  @click="open">
+              <i class="fas fa-plus add-icon"/>
+              添加新项目
+            </a>
+          </template>
+          <template #body>
+            <label class="input-label">项目名</label>
+            <el-input
+                v-model="projectName"
+                placeholder="输入项目名"
+                class="custom-input">
+            </el-input>
+            <div class="hint-text">建议输入2-20个字符的项目名称</div>
+          </template>
+        </add-new-project-0r-domain>
       </div>
       <div class="projectContainer">
         <div  @click="gotoProject(card)"

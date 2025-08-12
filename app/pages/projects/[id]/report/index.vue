@@ -161,6 +161,8 @@ const activeTab = ref(0);
   height: 100vh;
   background-color: #f8fafc;
   font-family: 'Inter', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  width:150%;
+  padding-left: 20px;
 }
 
 .main-header {

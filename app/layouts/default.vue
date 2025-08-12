@@ -1,42 +1,34 @@
 ﻿<script setup lang="ts">
-import {onMounted, ref} from 'vue'
-// menu:{
-//   projects:{name:string,url:string}[],
-//       domains:{name:string,url:string}[]
-// }
-// 定义响应式数据
-const menu = ref<{
-  projects: { name: string,id: string }[];
-  domains: { name: string,id: string }[];
-} >({
-  projects:[],
-  domains:[]
+import {type card} from "~/pages/index.vue";
+const { data, pending, error, refresh } = await useFetch<{
+  menu:{
+      projects:card[],
+      domains:{
+        id:string,
+        name:string
+      }[]
+    },
+    profiles:{
+      icon?:string,
+      name:string,
+      email:string
+    }
+  }>('/api/base', {
+    method: 'POST',
+    baseURL: `http://121.41.121.90:8080`,
+    body: { userid: 'admin' },
+    key: 'user-base-data',
 })
 
-const profiles = ref<{
-  icon?: string
-  name: string
-  email: string
-}>({
-  name: 'Unknown',
-  email: 'unknown@example.com'
+// 直接响应式绑定
+const menu = computed(() => data.value?.menu || {
+  projects: [],
+  domains: []
 })
 
-// 在组件挂载后获取数据
-onMounted(async () => {
-  try {
-    const res = await $fetch<{menu: {
-        projects: { name: string, id: string }[];
-        domains: { name: string, id: string }[];
-      },
-      profiles: {  icon?:string,name: string, email: string ,};
-    }>(`${useRuntimeConfig().public.apiBase}/api/menuDetails`) // 将获取的数据赋值给 ref
-    menu.value=res.menu
-    profiles.value=res.profiles
-    console.log(menu.value)
-  } catch (error) {
-    console.error('获取菜单数据失败:', error)
-  }
+const profiles = computed(() => data.value?.profiles || {
+  name: '',
+  email: ''
 })
 </script>
 

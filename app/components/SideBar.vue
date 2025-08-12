@@ -1,6 +1,7 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref } from 'vue';
-
+import ModalComponent from "~/components/ModalComponent.vue";
+import {v4 as uuidv4} from 'uuid';
 defineProps<{
   menu: {
     projects: { name: string; id: string }[] | [];
@@ -12,20 +13,48 @@ defineProps<{
     email: string;
   };
 }>();
+
+const projectName=ref("");
+const DomainName=ref("");
+const createNewProject = async () => {
+  if (!projectName.value.trim()) {
+    console.warn('项目名称不能为空')
+    return
+  }
+  const projectId = uuidv4()
+  try {
+    await $fetch('/api/addProject', {
+      method: 'PUT',
+      baseURL: `http://121.41.121.90:8080`,
+      body: {
+        userid: 'admin',
+        project: {
+          id: projectId,
+          name: projectName.value.trim()
+        }
+      }
+    })
+    console.log('项目创建成功:', projectId)
+    projectName.value = ''
+    await refreshNuxtData('dashboard-data')
+    await refreshNuxtData('user-menu-data')
+    await refreshNuxtData('user-base-data')
+  } catch (error: any) {
+    console.error('创建项目失败:', error)
+  }
+}
+const createDomain=()=>{
+  // Fetcher().withBaseUrl("http://192.68.0.10:8080").put()
+}
 </script>
 
 <template>
   <nav class="sideBar">
     <!-- 项目 -->
     <div>
-      <a href="/dashboard" class="menuItem">
-        <h3>
-          <span>
-            <i class="fas fa-home"></i>
-          </span>
-          主页
-        </h3>
-      </a>
+      <NuxtLink to="/" class="menuItem">
+        <h3><span><i class="fas fa-home"></i></span> 主页</h3>
+      </NuxtLink>
     </div>
     <span>你的项目</span>
     <ul>
@@ -35,7 +64,20 @@ defineProps<{
         </NuxtLink>
       </li>
       <li>
-        <a href="#" class="add-link">+ 添加新项目</a>
+        <add-new-project-0r-domain title="添加新项目" @submit="createNewProject">
+          <template v-slot:trigger="{open}">
+          <a href="#" class="add-link" @click="open">+ 添加新项目</a>
+          </template>
+          <template #body>
+            <label class="input-label">项目名</label>
+            <el-input
+                v-model="projectName"
+                placeholder="输入项目名"
+                class="custom-input">
+            </el-input>
+            <div class="hint-text">建议输入2-20个字符的项目名称</div>
+          </template>
+        </add-new-project-0r-domain>
       </li>
     </ul>
     <!-- 域名 -->
@@ -47,7 +89,26 @@ defineProps<{
         </NuxtLink>
       </li>
       <li>
-        <a href="#" class="add-link">+ 添加新域名</a>
+        <add-new-project0r-domain title="添加新域名">
+          <template v-slot:trigger="{open}">
+            <a href="#" class="add-link" @click="open">+ 添加新域名</a>
+          </template>
+          <template #body>
+            <label class="input-label">域名名</label>
+            <el-input
+                v-model="projectName"
+                placeholder="输入域名名"
+                class="custom-input">
+            </el-input>
+            <label class="input-label">域名地址</label>
+            <el-input
+                v-model="projectName"
+                placeholder="输入域名地址"
+                class="custom-input">
+            </el-input>
+            <div class="hint-text">建议输入2-20个字符的域名名称</div>
+          </template>
+        </add-new-project0r-domain>
       </li>
     </ul>
 
@@ -155,7 +216,6 @@ defineProps<{
   position: relative;
   align-items: center;
 }
-
 .menuItem:hover {
   background-color: #f8fafc;
   color: #1a73e8;
@@ -260,6 +320,47 @@ defineProps<{
 
 .menuItem:hover::after {
   background-color: #1a73e8;
+}
+.project-form-group {
+  margin-bottom: 24px;
+}
+
+.input-label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.label-text {
+  font-size: 14px;
+}
+
+.required-indicator {
+  margin-left: 4px;
+  color: #ff4d4f;
+}
+
+.custom-input {
+  width: 100%;
+}
+
+.custom-input :deep(.el-input__inner) {
+  height: 40px;
+  border-radius: 6px;
+  padding-left: 36px;
+}
+
+.custom-input :deep(.el-icon-folder-opened) {
+  color: #909399;
+  font-size: 16px;
+}
+
+.hint-text {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #999;
 }
 </style>
 

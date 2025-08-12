@@ -2,79 +2,62 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { ProjectDetails } from "@/interface/ProjectDetails"
-
+import {type card} from "~/pages/index.vue";
 const route = useRoute();
 const router = useRouter();
-const menu = ref<{
-  projects: { name: string,id: string }[];
-  domains: { name: string,id: string }[];
-} >({
-  projects:[],
-  domains:[]
-})
-const profiles = ref<{
-  icon?: string
-  name: string
-  email: string
-}>({
-  name: 'Unknown',
-  email: 'unknown@example.com'
-})
-const options = ref<{name:string,value:string}[]>([])
-const demoProject = ref<ProjectDetails>({
-  id:"UNKNOW",
-  name: "UNKNOW",
-  totalUp: 0,
-  totalCite:0,
-  mention: [],
-  regional_division: [],
-  platform_division:[],
-  change_line:[]
-})
-// 在组件挂载后获取数据
-onMounted(async () => {
-  try {
-    const res = await $fetch<{menu: {
-        projects: { name: string, id: string }[];
-        domains: { name: string, id: string }[];
-      },
-      profiles: {  icon?:string,name: string, email: string ,};
-    }>(`${useRuntimeConfig().public.apiBase}/api/menuDetails`) // 将获取的数据赋值给 ref
-    menu.value=res.menu
-    profiles.value=res.profiles
-    console.log(menu.value)
-  } catch (error) {
-    console.error('获取菜单数据失败:', error)
+const { data, pending, error, refresh } = await useFetch<{
+  menu:{
+    projects:card[],
+    domains:{
+      id:string,
+      name:string
+    }[]
+  },
+  profiles:{
+    icon?:string,
+    name:string,
+    email:string
   }
+}>('/api/base', {
+  method: 'POST',
+  baseURL: 'http://192.168.0.10:8080',
+  body: {
+    userid: 'admin'
+  },
+  key: 'user-base-data' // 用于缓存和刷新
 })
+
+// 响应式数据绑定
+const menu = computed(() => data.value?.menu || { projects: [], domains: [] })
+const profiles = computed(() => data.value?.profiles || { name: '', email: '' })
+
 // 获取项目数据
-async function fetchProjectData() {
-  try {
-    const res = await $fetch<{
-      options: {name: string, value: string}[],
-      demoProject: ProjectDetails
-    }>(`${useRuntimeConfig().public.apiBase}/api/projectDetails/${route.params.id}`, {
-      method: "GET",
-    })
-    options.value = res.options
-    demoProject.value = res.demoProject
-  } catch (error) {
-    console.error("获取项目数据失败:", error)
-  }
+interface Option {
+  name: string
+  value: string
 }
+// 使用 useFetch 获取项目数据（支持 SSR）
+const {
+  data: projectData,
+  pending: isLoading,
+  error: fetchError,
+  refresh: refreshProject
+}= await useFetch<ProjectDetails>(
+    () => `/api/projectDetails?projectId=${route.params.id}`,
+    {
+      baseURL: 'http://192.168.0.10:8080',
+      key: `project-details-${route.params.id}`,
+      watch: [() => route.params.id],
+      timeout: 10000,
+      retry: 2
+    }
+)
+// 响应式数据（自动更新）
+const demoProject = computed(() => projectData.value || null)
 
-// 初始获取数据
-fetchProjectData()
-
-// 监听路由参数变化
-watch(() => route.params.id, (newId) => {
-  if (newId) {
-    fetchProjectData()
-  }
-})
 // 定义导航标签数据
 const computedTabs = computed(() => {
-  const projectId = demoProject.value.id;
+  const projectId = demoProject.value?.id;
   return [
     { key: 'overview', label: '概述', url: `/projects/${projectId}/overview` },
     { key: 'report', label: '报告', url: `/projects/${projectId}/report` },
@@ -85,23 +68,39 @@ const computedTabs = computed(() => {
 const isActive = (url: string) => {
   // 获取当前路由路径
   const currentPath = route.path;
-
   // 构造问题页面的基础路径 (不含子路由)
   const questionsBasePath = `/projects/${route.params.id}/questions`;
-
   // 特殊处理问题页面的路径：匹配自身及所有子路径
   if (url === questionsBasePath) {
     return currentPath === url || currentPath.startsWith(`${url}/`);
   }
-
   // 其他菜单（如答案页）保持精确匹配
   return currentPath === url;
 };
-
 // 使用router.push进行导航
+const id=ref(useRoute().params.id);
 const handleTabClick = (url: string) => {
   router.push(url);
 };
+
+const deleteProject = async () => {
+  const projectId = route.params.id as string
+  try {
+    await $fetch('/api/deleteProject', {
+      method: 'DELETE',
+      baseURL: 'http://121.41.121.90:8080',
+      body: {
+        projectId: projectId
+      }
+    })
+    console.log('项目删除成功:', projectId)
+    await navigateTo('/', { replace: true })
+    await nextTick()
+    await refreshNuxtData('user-menu-data')
+  } catch (error: any) {
+    console.error('删除失败:', error)
+  }
+}
 </script>
 
 <template>
@@ -111,13 +110,10 @@ const handleTabClick = (url: string) => {
     <!-- 主内容区 -->
     <div class="main-content">
       <div class="main-header">
-        <h2 class="project-title">{{ demoProject.name }}</h2>
+        <h2 class="project-title">{{ demoProject?.name }}</h2>
         <div class="header-actions">
-          <button class="action-btn edit-btn">
-            <i class="icon-edit"></i> 编辑
-          </button>
-          <button class="action-btn share-btn">
-            <i class="icon-share"></i> 分享
+          <button class="action-btn share-btn" style="background-color: #dc0404" @click="deleteProject">
+            <i class="fas fa-trash"></i> 删除项目
           </button>
         </div>
       </div>
@@ -140,18 +136,77 @@ const handleTabClick = (url: string) => {
           <ul>
             <li class="sidebar-title">能见度</li>
             <li class="sidebar-item">
-              <a @click="navigateTo('report/visibility-mentions')" class="active">提到</a>
+              <a
+                  :href="`/projects/${id}/report`"
+                  class="nav-link"
+                  :class="{ active: isActive(`/projects/${id}/report`) }"
+                  @click.prevent="handleTabClick(`/projects/${id}/report`)"
+              >
+                提到
+              </a>
             </li>
-            <li class="sidebar-item"><a @click="navigateTo('#')">平台</a></li>
-            <li class="sidebar-item"><a @click="navigateTo('#')">声音份额</a></li>
-            <li class="sidebar-item"><a @click="navigateTo('#')">地区</a></li>
-
+            <li class="sidebar-item">
+              <a
+                  :href="`/projects/${id}/report/visibility-platforms`"
+                  class="nav-link"
+                  :class="{ active: isActive(`/projects/${id}/report/visibility-platforms`) }"
+                  @click.prevent="handleTabClick(`/projects/${id}/report/visibility-platforms`)"
+              >
+                平台
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a
+                  :href="`/projects/${id}/report/voice-occupation`"
+                  class="nav-link"
+                  :class="{ active: isActive(`/projects/${id}/report/voice-occupation`) }"
+                  @click.prevent="handleTabClick(`/projects/${id}/report/voice-occupation`)"
+              >
+                声音份额
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a
+                  :href="`/projects/${id}/report/area`"
+                  class="nav-link"
+                  :class="{ active: isActive(`/projects/${id}/report/area`) }"
+                  @click.prevent="handleTabClick(`/projects/${id}/report/area`)"
+              >
+              地区
+              </a>
+            </li>
             <li class="sidebar-title">引文</li>
-            <li class="sidebar-item"><a @click="navigateTo('#')">热门域名</a></li>
-            <li class="sidebar-item"><a @click="navigateTo('#')">首页</a></li>
-
+            <li class="sidebar-item">
+              <a
+                  :href="`/projects/${id}/report/area`"
+                  class="nav-link"
+                  :class="{ active: isActive(`/projects/${id}/report/hot-domain`) }"
+                  @click.prevent="handleTabClick(`/projects/${id}/report/hot-domain`)"
+              >
+                热门域名
+              </a>
+            </li>
+            <li class="sidebar-item">
+              <a
+                  :href="`/projects/${id}/report/main-index`"
+                  class="nav-link"
+                  :class="{ active: isActive(`/projects/${id}/report/main-index`) }"
+                  @click.prevent="handleTabClick(`/projects/${id}/report/main-index`)"
+              >
+                首页
+              </a>
+            </li>
             <li class="sidebar-title">问题</li>
-            <li class="sidebar-item"><a @click="navigateTo('#')">搜索需求</a></li>
+            <li class="sidebar-item">
+              <a
+                  :href="`/projects/${id}/report/search-request`"
+                  class="nav-link"
+                  :class="{ active: isActive(`/projects/${id}/report/search-request`) }"
+                  @click.prevent="handleTabClick(`/projects/${id}/report/search-request`)"
+              >
+                搜索需求
+              </a>
+            </li>
           </ul>
         </div>
         <div class="content">
@@ -273,93 +328,7 @@ const handleTabClick = (url: string) => {
   background-color: #5470c6;
   border-radius: 3px;
 }
-.sidebar {
-  width: 200px; /* 或者根据实际需求调整 */
-}
-.content-wrapper {
-  /* 设置最小高度，避免内容少时布局塌陷 */
-  min-height: 100vh;
-  background-color: #f5f7fa;
-  padding: 20px;
-  box-sizing: border-box;
-}
 
-.content {
-  flex: 1;
-  max-width: 1400px; /* 限制最大宽度，提升阅读体验 */
-  margin-left: 3px;
-  background-color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-  /* 平滑过渡效果 */
-  transition: all 0.3s ease;
-  /* 防止内部元素溢出 */
-  overflow: hidden;
-}
-
-/* 响应式：在小屏幕上减少内边距 */
-@media (max-width: 768px) {
-  .content-wrapper {
-    padding: 16px;
-  }
-
-  .content {
-    padding: 16px;
-    border-radius: 8px;
-    margin: 0;
-    max-width: 100%;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  }
-}
-
-/* 可选：鼠标悬停时轻微抬升效果 */
-.content:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .main-content {
-    padding: 20px;
-  }
-
-  .main-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .header-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
-  .main-header-row {
-    gap: 20px;
-    overflow-x: auto;
-    white-space: nowrap;
-    padding-bottom: 8px;
-    margin-bottom: 24px;
-  }
-}
-.main {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-}
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-a {
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-}
-
-/* 侧边栏容器 */
 .sidebar {
   width: 250px;
   height: 100vh;
@@ -424,5 +393,50 @@ a {
   color: #111;
 }
 
+.main {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 20px;
+  }
+
+  .main-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .header-actions {
+    width:100%;
+    justify-content: flex-end;
+  }
+
+  .main-header-row {
+    gap: 20px;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 8px;
+    margin-bottom: 24px;
+  }
+}
 </style>
+
+
 

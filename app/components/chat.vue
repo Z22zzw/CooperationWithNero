@@ -162,7 +162,7 @@ const props = defineProps({
   },
   apiEndpoint: {
     type: String,
-    default: 'http://localhost:8080/questionAI'
+    default: ``
   }
 });
 
@@ -201,12 +201,11 @@ const toggleTheme = () => {
 // 获取AI回答
 const getAIResponse = async (questionText: string) => {
   try {
-    const response = await fetch(props.apiEndpoint, {
+    const formData = new FormData();
+    formData.append('question', questionText);
+    const response = await fetch(`http://121.41.121.90:8080/api/chat`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({ question: questionText })
+      body: formData
     });
 
     if (!response.ok) {

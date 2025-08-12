@@ -1,5 +1,5 @@
 ﻿<template>
-  <div ref="chartRef" style="width: 500px; height: 400px; position: relative;"></div>
+  <div ref="chartRef" class="chart"></div>
 </template>
 
 <script setup lang="ts">
@@ -108,3 +108,9 @@ onMounted(() => {
   })
 })
 </script>
+<style scoped>
+.chart{
+  height: 400px;
+  width: 800px;
+}
+</style>

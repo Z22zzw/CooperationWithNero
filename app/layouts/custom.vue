@@ -6,78 +6,64 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { ProjectDetails } from "@/interface/ProjectDetails"
-import {Fetcher} from "~/composables/fetcher";
-
+import {type card} from "~/pages/index.vue";
 const route = useRoute();
 const router = useRouter();
-const menu = ref<{
-  projects: { name: string,id: string }[];
-  domains: { name: string,id: string }[];
-} >({
-  projects:[],
-  domains:[]
-})
-const profiles = ref<{
-  icon?: string
-  name: string
-  email: string
-}>({
-  name: 'Unknown',
-  email: 'unknown@example.com'
-})
-const options = ref<{name:string,value:string}[]>([])
-const demoProject = ref<ProjectDetails>({
-  id:"UNKNOW",
-  name: "UNKNOW",
-  totalUp: 0,
-  totalCite:0,
-  mention: [],
-  regional_division: [],
-  platform_division:[],
-  change_line:[]
-})
-// 在组件挂载后获取数据
-onMounted(async () => {
-  try {
-    const res = await $fetch<{menu: {
-        projects: { name: string, id: string }[];
-        domains: { name: string, id: string }[];
-      },
-      profiles: {  icon?:string,name: string, email: string ,};
-    }>(`${useRuntimeConfig().public.apiBase}/api/menuDetails`) // 将获取的数据赋值给 ref
-    menu.value=res.menu
-    profiles.value=res.profiles
-    console.log(menu.value)
-  } catch (error) {
-    console.error('获取菜单数据失败:', error)
+const { data, pending, error, refresh } = await useFetch<{
+  menu:{
+    projects:card[],
+    domains:{
+      id:string,
+      name:string
+    }[]
+  },
+  profiles:{
+    icon?:string,
+    name:string,
+    email:string
   }
+}>('/api/base', {
+  method: 'POST',
+  baseURL: `http://121.41.121.90:8080`,
+  body: {
+    userid: 'admin'
+  },
+  // headers 可省略，$fetch 会自动设置 application/json
+  key: 'user-base-data' // 用于缓存和刷新
 })
+// 响应式数据绑定
+const menu = computed(() => data.value?.menu || { projects: [], domains: [] })
+const profiles = computed(() => data.value?.profiles || { name: '', email: '' })
+
+
 // 获取项目数据
-async function fetchProjectData() {
-  try {
-    const res = await Fetcher().get<{
-      options: {name: string, value: string}[],
-      demoProject: ProjectDetails
-    }>(`/api/projectDetails/${route.params.id}`)
-    options.value = res.options
-    demoProject.value = res.demoProject
-  } catch (error) {
-    console.error("获取项目数据失败:", error)
-  }
+interface Option {
+  name: string
+  value: string
 }
+// 使用 useFetch 获取项目数据（支持 SSR）
+const {
+  data: projectData,
+  pending: isLoading,
+  error: fetchError,
+  refresh: refreshProject
+}= await useFetch<ProjectDetails>(
+    // 动态 URL，支持服务端渲染
+    () => `/api/projectDetails?projectId=${route.params.id}`,
+    {
+      baseURL: `http://121.41.121.90:8080`,
+      key: `project-details-${route.params.id}`,
+      watch: [() => route.params.id],
+      timeout: 10000,
+      retry: 2
+    }
+)
+// 响应式数据（自动更新）
+const demoProject = computed(() => projectData.value || null)
 
-// 初始获取数据
-fetchProjectData()
-
-// 监听路由参数变化
-watch(() => route.params.id, (newId) => {
-  if (newId) {
-    fetchProjectData()
-  }
-})
 // 定义导航标签数据
 const computedTabs = computed(() => {
-  const projectId = demoProject.value.id;
+  const projectId = demoProject.value?.id;
   return [
     { key: 'overview', label: '概述', url: `/projects/${projectId}/overview` },
     { key: 'report', label: '报告', url: `/projects/${projectId}/report` },
@@ -91,20 +77,37 @@ const isActive = (url: string) => {
 
   // 构造问题页面的基础路径 (不含子路由)
   const questionsBasePath = `/projects/${route.params.id}/questions`;
-
   // 特殊处理问题页面的路径：匹配自身及所有子路径
   if (url === questionsBasePath) {
     return currentPath === url || currentPath.startsWith(`${url}/`);
   }
-
   // 其他菜单（如答案页）保持精确匹配
   return currentPath === url;
 };
-
 // 使用router.push进行导航
 const handleTabClick = (url: string) => {
   router.push(url);
 };
+const deleteProject = async () => {
+  const projectId = route.params.id as string
+  try {
+    await $fetch('/api/deleteProject', {
+      method: 'DELETE',
+      baseURL: `http://121.41.121.90:8080`,
+      body: {
+        projectId: projectId
+      }
+    })
+    console.log('项目删除成功:', projectId)
+    await navigateTo('/', { replace: true })
+    await nextTick()
+    await refreshNuxtData('dashboard-data')
+    await refreshNuxtData('user-menu-data')
+    await refreshNuxtData('user-base-data')
+  } catch (error: any) {
+    console.error('删除失败:', error)
+  }
+}
 </script>
 <template>
   <div class="layout">
@@ -113,13 +116,10 @@ const handleTabClick = (url: string) => {
     <!-- 主内容区 -->
     <div class="main-content">
       <div class="main-header">
-        <h2 class="project-title">{{ demoProject.name }}</h2>
+        <h2 class="project-title">{{ demoProject?.name }}</h2>
         <div class="header-actions">
-          <button class="action-btn edit-btn">
-            <i class="icon-edit"></i> 编辑
-          </button>
-          <button class="action-btn share-btn">
-            <i class="icon-share"></i> 分享
+          <button class="action-btn share-btn" style="background-color:#dc0404" @click="deleteProject">
+            <i class="fas fa-trash"></i> 删除项目
           </button>
         </div>
       </div>

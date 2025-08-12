@@ -80,6 +80,8 @@
         </template>
       </el-table-column>
     </el-table>
+
+
     <el-pagination
         background
         layout="total, sizes, prev, pager, next, jumper"
@@ -114,9 +116,6 @@
                   @update:active-value="currentTab = $event"
                   @click="askAi(currentTab)"
         />
-        <div v-if="isStreaming" class="streaming-indicator">
-          <i class="el-icon-loading"></i> 努力回答中... (已接收 {{ receivedChars }} 字符)
-        </div>
         <div class="answer-content" v-html="questionData.answer"></div>
       </div>
 
@@ -148,12 +147,56 @@
 import {computed, ref} from 'vue';
 
 import MarkdownIt from "markdown-it";
-import {Fetcher} from "~/composables/fetcher";
+
 const receivedChars=ref<number>(0)
 const currentPage = ref(1);
 const isStreaming = ref(false);
-const md = new MarkdownIt();
+const md = new MarkdownIt({
+  html:true,
 
+  linkify: true
+});
+function extractAndCleanMarkdown(
+    text: string,
+    options: {
+      fallbackToOriginal?: boolean;
+      ensureBreaks?: boolean;
+    } = {}
+): string {
+  const { fallbackToOriginal = true, ensureBreaks = false } = options;
+
+  let content:string|undefined= text;
+
+  // 步骤1：尝试提取 </think> 之后的内容
+  const match = content.match(/<\/think>([\s\S]*)/i);
+  if (match) {
+    content = match[1]; // 只保留闭合标签之后的内容
+  } else if (fallbackToOriginal) {
+    // 如果没有 </think>，使用原始内容（或可改为返回 ''）
+    content = text;
+  } else {
+    return '';
+  }
+  // 步骤2：清理中文之间的多余空格（如 “AI 和 人类” → “AI和人类”）
+  content = content?.replace(/([\u4e00-\u9fa5])\s+(?=[\u4e00-\u9fa5])/g, '$1');
+
+  // 步骤3：规范化换行（多个换行合并为段落分隔）
+  content = content?.replace(/\n\s*\n/g, '\n\n');
+
+  // 步骤4：去除首尾空白
+  content = content?.trim();
+
+  // 可选：确保每行末尾有 2 个空格，以支持 Markdown 单行换行（<br>）
+  if (ensureBreaks) {
+    content = content!
+        .split('\n')
+        .map(line => (line.endsWith('  ') ? line : line + '  '))
+        .join('\n')
+        .replace(/\n\n  /g, '\n\n'); // 避免段落间也加 2 空格
+  }
+
+  return content||"";
+}
 const streamingController = ref<AbortController | null>(null);
 // 修改后的 askAi 函数
 const askAi = async (value: string) => {
@@ -177,7 +220,7 @@ const askAi = async (value: string) => {
     streamingController.value = controller;
 
     const response = await fetch(
-        `http://192.168.0.10:8080/api/askaiai?message=${encodeURIComponent(clickedRowData.value?.name || '')}`,
+        `http://121.41.121.90:8080/api/askaiai?message=${encodeURIComponent(clickedRowData.value?.name || '')}`,
         { signal: controller.signal }
     );
 
@@ -199,42 +242,32 @@ const askAi = async (value: string) => {
       const { done, value: chunk } = await reader.read();
       if (done) break;
 
-      // 将二进制数据转换为文本
       const textChunk = decoder.decode(chunk, { stream: true });
       accumulatedData += textChunk;
-      receivedChars.value += textChunk.length;
 
-      // 处理服务器返回的特定格式
-      const lines = accumulatedData.split('\n');
+      let index;
+      while ((index = accumulatedData.indexOf('\n')) !== -1) {
+        const line = accumulatedData.substring(0, index);
+        accumulatedData = accumulatedData.substring(index + 1);
 
-      // 保留最后一行（可能是不完整的）
-      accumulatedData = lines.pop() || '';
-
-      // 处理每一行
-      for (const line of lines) {
         if (line.startsWith('data:')) {
-          const content = line.substring(5).trim();
-          contentAvailable = true;
-
-          // 更新原始文本
-          questionData.value.rawAnswer += content;
-
-          // 实时更新显示内容
-          questionData.value.answer = md.render(questionData.value.rawAnswer);
-
-          // 确保视图更新
-          await nextTick();
+          const content = line.substring(5);
+          if (content) {
+            questionData.value.rawAnswer += content+ '\n';
+            receivedChars.value++
+            questionData.value.answer = md.render(questionData.value.rawAnswer);
+            await nextTick();
+          }
         }
       }
     }
 
-    // 处理剩余数据
-    if (accumulatedData) {
-      if (accumulatedData.startsWith('data:')) {
-        const content = accumulatedData.substring(5).trim();
-        questionData.value.rawAnswer += content;
+// 处理最后剩余部分（可能没有 \n 结尾）
+    if (accumulatedData.startsWith('data:')) {
+      const content = accumulatedData.substring(5);
+      if (content) {
+        questionData.value.rawAnswer += content + '\n';
         questionData.value.answer = md.render(questionData.value.rawAnswer);
-        await nextTick();
       }
     }
 
@@ -260,12 +293,18 @@ const askAi = async (value: string) => {
       }
     }
   } finally {
+    // 提取 </think> 之后的内容
+    const finalAnswer = questionData.value.rawAnswer;
+
+    // 更新显示
+    questionData.value.rawAnswer = extractAndCleanMarkdown(finalAnswer);
+    questionData.value.answer = md.render(finalAnswer);
+    console.log(finalAnswer);
     isLoading.value = false;
     isStreaming.value = false;
     streamingController.value = null;
   }
 };
-
 // 在抽屉关闭时取消流式传输
 const handleDrawerClose = () => {
   if (streamingController.value) {
@@ -276,7 +315,6 @@ const handleDrawerClose = () => {
 
 
 const pageSize = ref(10);
-const total = ref(0);
 const isLoading=ref(true);
 const displayData = ref<IssuesDetails[]>([]);
 
@@ -334,26 +372,22 @@ const handleRowClick=(row: IssuesDetails)=>{
   askAi("deepseek")
   drawerVisible.value = true;
 }
-const data = ref<IssuesDetails[]>([]);
-const fetchData = () => {
-  Fetcher().withHeader({
-    "Content-Type": 'application/json',
-  }).withBaseUrl("http://192.168.0.10:8080").post<IssuesDetails[]>("/api/issues",
-      {
-        project_id:useRoute().params.id
-      }
-  ).then((result) => {
-    data.value = result
-    total.value = result.length
-    updateDisplayData()
+const projectId=ref(useRoute().params.id)
+// 使用 useFetch 获取数据
+const { data, pending, error, refresh } = await useFetch<IssuesDetails[]>('/api/issues', {
+  method: 'POST',
+  baseURL: `http://121.41.121.90:8080`,
+  body: {
+    project_id: projectId.value
+  },
+  key: `issues-list-${projectId.value}`, // 缓存 key，支持刷新
+  watch: [projectId] // 当 projectId 变化时自动重新请求
+})
+// 响应式数据
+const issuesData = computed(() => data.value || [])
+const total = computed(() => issuesData.value.length)
+console.log(issuesData.value)
 
-  }).catch((error) => {
-    console.error('请求失败:', error)
-    data.value = []
-    total.value = 0
-  });
-  total.value = data.value.length;
-}
 const platformNames: Record<string, string> = {
   deepseek: "deepseek",
   doubao: "豆包",
@@ -412,9 +446,14 @@ const handleCurrentChange = (page:number) => {
 const updateDisplayData = () => {
   const start = (currentPage.value - 1) * pageSize.value;
   const end = start + pageSize.value;
-  displayData.value = data.value.slice(start, end);
+  displayData.value = issuesData.value.slice(start, end);
 };
-fetchData();
+watch(() => issuesData.value, // 注意是 .value
+    (newValue, oldValue) => {
+      updateDisplayData();
+    }
+)
+updateDisplayData();
 </script>
 
 <style scoped>
@@ -477,6 +516,7 @@ fetchData();
   display: flex;
   gap: 6px;
   align-items: center;
+  cursor: pointer;
 }
 
 .platform-icon {

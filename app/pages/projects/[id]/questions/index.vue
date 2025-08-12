@@ -1,67 +1,76 @@
-﻿<script lang="ts" setup>
+<script lang="ts" setup>
 definePageMeta({
   layout: "custom",
 })
 import {ref, watch} from 'vue'
 import ModalComponent from '~/components/ModalComponent.vue'
-import {Fetcher} from "~/composables/fetcher";
 import {v4 as uuidv4} from 'uuid';
+
 const showModal = ref(false)
 // AI 输入
 const aiKeyword = ref('');
 const customQuestion = ref('');
 const sidePanelVisible = ref(false);
 const aiSuggestions = ref<string[]>([]);
-// 打开右侧子弹窗
 const isloading=ref(true)
-const openSidePanel = async () => {
-  sidePanelVisible.value = true;
-  isloading.value=true;
+const openSidePanel =() => {
+  sidePanelVisible.value = true
+  isloading.value = true
+  // 如果没有输入，默认关键词
   if (!aiKeyword.value.trim()) {
-    aiKeyword.value = '生成式搜索引擎';
+    aiKeyword.value = '生成式搜索引擎'
   }
-  var formData = new FormData();
-  formData.append("question", aiKeyword.value);
-  try {
-    const result = await Fetcher()
-        .withBaseUrl("http://192.168.0.10:8080")
-        .post<{ data: string[] }>("/questionAI", formData);
-
-    aiSuggestions.value = result.data;
-
-    isloading.value = false;
-    console.log('aiSuggestions:', aiSuggestions.value);
-  } catch (error) {
-    console.error('请求失败:', error);
-    isloading.value = false;
-  }
-};
+  // 构造 FormData
+  const formData = new FormData()
+  formData.append('question', aiKeyword.value)
+  $fetch<string>('/questionAI', {
+    method: 'POST',
+    baseURL: 'http://121.41.121.90:8080',
+    body: formData,
+  }).then(response => {
+    aiSuggestions.value = JSON.parse(response).data
+  }).catch(error => {
+    console.log(error)
+  }).finally(() => {
+    isloading.value = false
+  })
+}
 // 选择建议
 const selectSuggestion = (suggestion: string) => {
   customQuestion.value = suggestion;
   sidePanelVisible.value = false;
 };
-const handleConfirm = (question: string) => {
+const route = useRoute();
+const projectId = route.params.id as string;
+
+const handleConfirm = async (question: string) => {
   showModal.value = false;
-  const ProjectId=useRoute().params.id;
-  const id=uuidv4()
-  Fetcher()
-      .withHeader({
-        "Content-Type": "application/json",
-      })
-      .withBaseUrl("http://192.168.0.10:8080").put<string>("/api/addissue", {
-        project_id: ProjectId,
+  const issueId = uuidv4();
+  try {
+    await $fetch('/api/addissue', {
+      method: 'PUT',
+      baseURL: `http://121.41.121.90:8080`,
+      headers:{
+        "Content-type":"application/json"
+      },
+      body: JSON.stringify({
+        project_id: projectId,
         issueList: [
           {
-            id: id,
+            id: issueId,
             name: question,
             mention_times: 0,
             citations: 0,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           }
         ]
       })
-      window.location.reload()
+    });
+    await refreshNuxtData(`issues-list-${projectId}`);
+    console.log('问题添加成功');
+  } catch (error: any) {
+    console.error('添加失败:', error);
+  }
 };
 // 在模态框关闭时重置侧边面板
 watch(showModal, (newVal) => {
@@ -74,41 +83,35 @@ const removeSuggestion = (index: number) => {
   aiSuggestions.value.splice(index, 1);
 };
 // 应用建议项（提交）
-const applySuggestion = () => {
-  if (aiSuggestions.value.length != 0) {
-    // 实际提交逻辑
-    const ProjectId=useRoute().params.id;
-    const addIssues=[];
-    for (const Issue of aiSuggestions.value) {
-      const id=uuidv4()
-      addIssues.push(
-        {
-          id: id,
-          name:Issue,
-          mention_times: 0,
-          citations: 0,
-          updated_at:new Date().toISOString()
-        }
-      );
-    }
-    Fetcher().withBaseUrl("http://192.168.0.10:8080").withHeader({
-      "content-type": "application/json"
-    }).put<{
-      project_id:string,
-      issues:string[]
-    }>("/api/addissue",{
-      project_id:ProjectId,
-      issueList:addIssues
+const applySuggestion = async () => {
+  if (aiSuggestions.value.length === 0) return
+  const route = useRoute()
+  const projectId = route.params.id as string
+  const addIssues = aiSuggestions.value.map(issue => ({
+    id: uuidv4(),
+    name: issue,
+    mention_times: 0,
+    citations: 0,
+    updated_at: new Date().toISOString()
+  }))
+  try {
+    await $fetch('/api/addissue', {
+      method: 'PUT',
+      baseURL: 'http://121.41.121.90:8080',
+      body: {
+        project_id: projectId,
+        issueList: addIssues
+      }
     })
-    console.log({
-      project_id:ProjectId,
-      issueList:addIssues
-    })
-    sidePanelVisible.value = false;
-    showModal.value = false;
+
+    console.log('批量添加成功:', { project_id: projectId, issueList: addIssues })
+    sidePanelVisible.value = false
+    showModal.value = false
+    await refreshNuxtData(`issues-list-${route.params.id}`);
+  } catch (error: any) {
+    console.error('批量添加失败:', error)
   }
-  window.location.reload()
-};
+}
 // 接收子组件传来的 id 数组
 const selectedIds = ref<string[]>([]);
 
@@ -116,14 +119,23 @@ const onSelectionChanged = (ids: string[]) => {
   selectedIds.value = ids;
 };
 
-const handleDelete = () => {
-  Fetcher()
-      .withBaseUrl("http://192.168.0.10:8080")
-      .withHeader({"content-type": "application/json"})
-      .delete("/api/deleteIssues",{
-        id:selectedIds.value
-      })
-  window.location.reload()
+const handleDelete = async () => {
+  if (selectedIds.value.length === 0) return
+
+  try {
+    await $fetch('/api/deleteIssues', {
+      method: 'DELETE',
+      baseURL: 'http://121.41.121.90:8080',
+      body: {
+        id: selectedIds.value
+      }
+    })
+    console.log('删除成功:', selectedIds.value)
+    await refreshNuxtData(`issues-list-${projectId}`)
+    selectedIds.value = []
+  } catch (error: any) {
+    console.error('删除失败:', error)
+  }
 }
 </script>
 
@@ -140,6 +152,7 @@ const handleDelete = () => {
         </button>
         <button
             class="elegant-button delete-button"
+            :disabled="selectedIds.length==0"
             @click="handleDelete"
         >
     <span class="icon-wrapper">
@@ -163,35 +176,36 @@ const handleDelete = () => {
         </template>
 
         <!-- AI 生成问题 -->
-        <div class="form-section">
-          <label class="section-label">AI 生成问题</label>
-          <div class="input-group">
+        <template #body>
+          <div class="form-section">
+            <label class="section-label">AI 生成问题</label>
+            <div class="input-group">
+              <input
+                  type="text"
+                  v-model="aiKeyword"
+                  placeholder="输入关键词，例如：项目管理、AI 伦理..."
+                  class="input-field"
+              />
+              <button class="btn-primary" @click="openSidePanel">生成</button>
+            </div>
+          </div>
+
+          <!-- 分隔线 -->
+          <div class="divider">
+            <span class="divider-text">或</span>
+          </div>
+
+          <!-- 自定义问题 -->
+          <div class="form-section">
+            <label class="section-label">自定义问题</label>
             <input
                 type="text"
-                v-model="aiKeyword"
-                placeholder="输入关键词，例如：项目管理、AI 伦理..."
-                class="input-field"
+                v-model="customQuestion"
+                placeholder="请输入你的问题"
+                class="input-field full-width"
             />
-            <button class="btn-primary" @click="openSidePanel">生成</button>
           </div>
-        </div>
-
-        <!-- 分隔线 -->
-        <div class="divider">
-          <span class="divider-text">或</span>
-        </div>
-
-        <!-- 自定义问题 -->
-        <div class="form-section">
-          <label class="section-label">自定义问题</label>
-          <input
-              type="text"
-              v-model="customQuestion"
-              placeholder="请输入你的问题"
-              class="input-field full-width"
-          />
-        </div>
-
+        </template>
         <!-- Footer -->
         <template #footer>
           <div class="footer-buttons">

@@ -1,9 +1,8 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-    runtimeConfig:{
-        public:{
-            apiBase:"http://localhost:5267",
-        }
+    nitro: {
+        // 明确使用 CommonJS 而非 ESM
+        preset: 'node-server', // 或 'node'、'node-cluster'
     },
     compatibilityDate: '2025-07-15',
     devtools: { enabled: true },
