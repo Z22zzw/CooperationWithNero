@@ -25,7 +25,7 @@ const openSidePanel =() => {
   formData.append('question', aiKeyword.value)
   $fetch<string>('/questionAI', {
     method: 'POST',
-    baseURL: 'http://121.41.121.90:8080',
+    baseURL: 'http://localhost:8080',
     body: formData,
   }).then(response => {
     aiSuggestions.value = JSON.parse(response).data
@@ -49,7 +49,7 @@ const handleConfirm = async (question: string) => {
   try {
     await $fetch('/api/addissue', {
       method: 'PUT',
-      baseURL: `http://121.41.121.90:8080`,
+      baseURL: `http://localhost:8080`,
       headers:{
         "Content-type":"application/json"
       },
@@ -97,7 +97,7 @@ const applySuggestion = async () => {
   try {
     await $fetch('/api/addissue', {
       method: 'PUT',
-      baseURL: 'http://121.41.121.90:8080',
+      baseURL: 'http://localhost:8080',
       body: {
         project_id: projectId,
         issueList: addIssues
@@ -125,7 +125,7 @@ const handleDelete = async () => {
   try {
     await $fetch('/api/deleteIssues', {
       method: 'DELETE',
-      baseURL: 'http://121.41.121.90:8080',
+      baseURL: 'http://localhost:8080',
       body: {
         id: selectedIds.value
       }
@@ -643,7 +643,6 @@ const handleDelete = async () => {
 .side-panel-body {
   padding: 15px 20px;
   overflow-y: auto;
-  flex-grow: 1;
 }
 
 .suggestion-item {

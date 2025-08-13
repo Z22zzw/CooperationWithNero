@@ -192,7 +192,7 @@ function extractAndCleanMarkdown(
         .split('\n')
         .map(line => (line.endsWith('  ') ? line : line + '  '))
         .join('\n')
-        .replace(/\n\n  /g, '\n\n'); // 避免段落间也加 2 空格
+        .replace(/\n\n/g, '\n\n'); // 避免段落间也加 2 空格
   }
 
   return content||"";
@@ -220,7 +220,7 @@ const askAi = async (value: string) => {
     streamingController.value = controller;
 
     const response = await fetch(
-        `http://121.41.121.90:8080/api/askaiai?message=${encodeURIComponent(clickedRowData.value?.name || '')}`,
+        `http://localhost:8080/api/askaiai?message=${encodeURIComponent(clickedRowData.value?.name || '')}`,
         { signal: controller.signal }
     );
 
@@ -376,7 +376,7 @@ const projectId=ref(useRoute().params.id)
 // 使用 useFetch 获取数据
 const { data, pending, error, refresh } = await useFetch<IssuesDetails[]>('/api/issues', {
   method: 'POST',
-  baseURL: `http://121.41.121.90:8080`,
+  baseURL: `http://localhost:8080`,
   body: {
     project_id: projectId.value
   },

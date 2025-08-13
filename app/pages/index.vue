@@ -19,7 +19,7 @@ const cards =ref<card[]>([])
 definePageMeta({
   layout: 'default'
 })
-const apiBase="http://121.41.121.90:8080"
+const apiBase="http://localhost:8080"
 const { data, pending, error, refresh } = await useFetch<{
   menu: {
     projects: card[]

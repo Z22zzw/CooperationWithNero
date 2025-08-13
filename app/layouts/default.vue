@@ -15,7 +15,7 @@ const { data, pending, error, refresh } = await useFetch<{
     }
   }>('/api/base', {
     method: 'POST',
-    baseURL: `http://121.41.121.90:8080`,
+    baseURL: `http://localhost:8080`,
     body: { userid: 'admin' },
     key: 'user-base-data',
 })

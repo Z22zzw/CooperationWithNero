@@ -41,7 +41,7 @@ const chartData = ref({
 const rankingItems = ref([
   {
     id: 1,
-    name: "艾森豪威尔矩阵",
+    name: "GEO",
     value: "127 答案",
     changeDirection: "up",
     changePercentage: "+3.2%",
@@ -50,7 +50,7 @@ const rankingItems = ref([
   },
   {
     id: 2,
-    name: "摩根优先因子",
+    name: "生成时引擎优化",
     value: "89 答案",
     changeDirection: "up",
     changePercentage: "+1.8%",

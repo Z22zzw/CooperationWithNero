@@ -129,7 +129,7 @@ function getCurrentDate() {
 }
 // 获取项目数据
 const { data, pending, error, refresh } = await useFetch<ProjectDetails>(() => `/api/projectDetails?projectId=${route.params.id}`, {
-  baseURL:`http://121.41.121.90:8080e`, // 如果你的 API 不在同域
+  baseURL:`http://localhost:8080e`, // 如果你的 API 不在同域
   key: `project-details-${route.params.id}`, // 缓存 key，避免不同 id 混淆
   watch: [() => route.params.id] // 路由变化时自动刷新
 })
@@ -208,7 +208,7 @@ const toggleCardActive = (cardType: string) => {
   margin-top: 20px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 40px;
 }
 
 /* 移动端：单列 */

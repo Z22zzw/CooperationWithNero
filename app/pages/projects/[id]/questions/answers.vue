@@ -29,7 +29,7 @@ const openSidePanel = async () => {
   try {
     const result = await $fetch<{ data: string[] }>('/questionAI', {
       method: 'POST',
-      baseURL: `http://121.41.121.90:8080`,
+      baseURL: `http://localhost:8080`,
       body: formData, // $fetch 支持 FormData 自动设置 Content-Type
     })
     aiSuggestions.value = result.data

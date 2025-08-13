@@ -25,7 +25,7 @@ const createNewProject = async () => {
   try {
     await $fetch('/api/addProject', {
       method: 'PUT',
-      baseURL: `http://121.41.121.90:8080`,
+      baseURL: `http://localhost:8080`,
       body: {
         userid: 'admin',
         project: {
@@ -66,7 +66,7 @@ const createDomain=()=>{
       <li>
         <add-new-project-0r-domain title="添加新项目" @submit="createNewProject">
           <template v-slot:trigger="{open}">
-          <a href="#" class="add-link" @click="open">+ 添加新项目</a>
+          <a class="add-link" @click="open">+ 添加新项目</a>
           </template>
           <template #body>
             <label class="input-label">项目名</label>
@@ -91,7 +91,7 @@ const createDomain=()=>{
       <li>
         <add-new-project0r-domain title="添加新域名">
           <template v-slot:trigger="{open}">
-            <a href="#" class="add-link" @click="open">+ 添加新域名</a>
+            <a  class="add-link" @click="open">+ 添加新域名</a>
           </template>
           <template #body>
             <label class="input-label">域名名</label>

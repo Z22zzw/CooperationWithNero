@@ -88,7 +88,7 @@ const deleteProject = async () => {
   try {
     await $fetch('/api/deleteProject', {
       method: 'DELETE',
-      baseURL: 'http://121.41.121.90:8080',
+      baseURL: 'http://localhost:8080',
       body: {
         projectId: projectId
       }

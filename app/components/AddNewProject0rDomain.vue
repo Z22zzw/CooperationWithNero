@@ -1,13 +1,42 @@
 ﻿<script setup lang="ts">
+import { ref, nextTick } from 'vue';
 import ModalComponent from "~/components/ModalComponent.vue";
+
 defineProps<{
   title: string;
-}>()
-const emit = defineEmits(['open', 'close',"submit"]);
-const showModel=ref(false);
-const openAddModel= () => {
+}>();
+
+const emit = defineEmits(['open', 'close', 'submit']);
+const showModel = ref(false);
+const isOpening = ref(false); // 跟踪弹窗状态
+
+const openAddModel = async () => {
+  // 先显示弹窗并触发动画
   showModel.value = true;
-  emit('open');
+  isOpening.value = true;
+
+  // 等待DOM更新和动画开始
+  await nextTick();
+
+  // 延迟触发open事件，确保动画不被阻塞
+  setTimeout(() => {
+    emit('open');
+    isOpening.value = false;
+  }, 50);
+};
+
+const handleSubmit = () => {
+  emit('submit');
+  // 使用动画优化关闭
+  showModel.value = false;
+};
+
+// 确保ModalComponent支持v-model
+const updateModelValue = (value: boolean) => {
+  showModel.value = value;
+  if (!value) {
+    emit('close');
+  }
 };
 </script>
 
@@ -23,62 +52,104 @@ const openAddModel= () => {
   </slot>
 
   <ModalComponent
-      v-model="showModel"
+      :modelValue="showModel"
+      @update:modelValue="updateModelValue"
+      :class="['custom-modal', {'opening': isOpening}]"
       title="添加新项目"
-      class="custom-modal"
   >
     <template #header>
       <h2 class="modal-title">{{ title }}</h2>
     </template>
-    <!-- 自定义问题 -->
+
+    <!-- 自定义内容区域 -->
     <template #body>
       <slot name="body"></slot>
     </template>
+
     <!-- Footer -->
     <template #footer>
       <div class="footer-buttons">
         <button @click="showModel = false" class="btn-secondary">取消</button>
-        <button @click="()=>{emit('submit');showModel=false}" class="btn-primary">提交</button>
+        <button @click="handleSubmit" class="btn-primary">提交</button>
       </div>
     </template>
   </ModalComponent>
 </template>
+
 <style scoped>
-.footer-buttons {
-  display: flex;
-  justify-content: space-between; /* 在父容器中均匀分布子元素 */
-  gap: 10px; /* 子元素之间的间距 */
+/* 添加过渡效果 */
+.custom-modal {
+  transition:
+      opacity 0.3s ease-out,
+      transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
+
+/* 初始状态 */
+.custom-modal:not(.opening) {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+
+/* 打开状态 */
+.custom-modal.opening {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* 关闭状态 */
+.custom-modal:not(.opening):not([model-value="true"]) {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+
+/* 确保点击事件不影响性能 */
+button {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
 /* 基础按钮样式 */
 button {
-  padding: 10px 20px; /* 内边距：上下10px，左右20px */
-  border: none; /* 移除默认边框 */
-  border-radius: 5px; /* 圆角半径 */
-  cursor: pointer; /* 鼠标悬停时显示手型 */
-  font-size: 16px; /* 字体大小 */
-  transition: all 0.3s ease; /* 平滑过渡效果 */
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.3s ease;
 }
 
 /* 取消按钮样式 */
 .btn-secondary {
-  background-color: #e0e0e0; /* 背景颜色 */
-  color: #333; /* 文字颜色 */
+  background-color: #e0e0e0;
+  color: #333;
 }
 
 /* 提交按钮样式 */
 .btn-primary {
-  background-color: #4CAF50; /* 背景颜色 */
-  color: white; /* 文字颜色 */
+  background-color: #4CAF50;
+  color: white;
 }
 
-/* 鼠标悬停时的效果 */
+/* 鼠标悬停效果 */
 button:hover {
-  opacity: 0.85; /* 稍微透明 */
+  opacity: 0.85;
 }
 
 /* 禁用状态 */
 button:disabled {
-  background-color: #cccccc; /* 灰色背景 */
-  cursor: not-allowed; /* 不允许点击的鼠标样式 */
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* 按钮容器优化 */
+.footer-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* 优化加载性能 */
+:deep(.modal-content) {
+  will-change: transform, opacity;
 }
 </style>
