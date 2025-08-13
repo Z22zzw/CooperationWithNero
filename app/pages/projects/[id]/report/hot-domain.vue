@@ -10,97 +10,72 @@ const chartData = ref({
   xAxisData: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
   series: [
     {
-      name: '邮件营销',
-      data: [0.12, 0.13, 0.11, 0.10, 0.09, 0.08, 0.07],
-      color: '#5470c6'
+      name: '社交媒体营销',
+      data: [0.22, 0.24, 0.25, 0.27, 0.26, 0.28, 0.30],
+      color: '#FF6B6B'
     },
     {
-      name: '联盟广告',
-      data: [0.18, 0.17, 0.19, 0.18, 0.16, 0.15, 0.14],
-      color: '#91cc75'
+      name: 'KOL合作',
+      data: [0.18, 0.19, 0.21, 0.23, 0.25, 0.24, 0.26],
+      color: '#4ECDC4'
     },
     {
-      name: '视频广告',
-      data: [0.20, 0.21, 0.22, 0.23, 0.20, 0.21, 0.22],
-      color: '#fac858'
+      name: '品牌联名',
+      data: [0.15, 0.17, 0.16, 0.19, 0.22, 0.24, 0.25],
+      color: '#FFD166'
     },
     {
-      name: '直接访问',
-      data: [0.25, 0.24, 0.23, 0.24, 0.25, 0.26, 0.27],
-      color: '#ee6666'
-    },
-    {
-      name: '搜索引擎',
-      data: [0.24, 0.23, 0.23, 0.23, 0.28, 0.28, 0.28],
-      color: '#73c0de'
+      name: '内容营销',
+      data: [0.28, 0.25, 0.27, 0.29, 0.30, 0.32, 0.34],
+      color: '#6A0572'
     }
   ]
 });
-
-// 排行榜数据
 const rankingItems = ref([
   {
     id: 1,
-    name: "艾森豪威尔矩阵",
-    value: "127 答案",
+    name: "情感共鸣营销",
+    value: "4.8 用户参与度",
     changeDirection: "up",
-    changePercentage: "+3.2%",
-    score: 0.54,
-    color: "#3b82f6"
+    changePercentage: "+5.2%",
+    score: 0.89,
+    color: "#FF6B6B"
   },
   {
     id: 2,
-    name: "摩根优先因子",
-    value: "89 答案",
+    name: "可持续发展主张",
+    value: "92% 认可度",
     changeDirection: "up",
-    changePercentage: "+1.8%",
-    score: 0.47,
-    color: "#10b981"
+    changePercentage: "+3.4%",
+    score: 0.85,
+    color: "#4ECDC4"
   },
   {
     id: 3,
-    name: "体式",
-    value: "75 答案",
+    name: "元宇宙体验",
+    value: "78K 访问量",
     changeDirection: "down",
-    changePercentage: "-0.8%",
-    score: 0.41,
-    color: "#8b5cf6"
+    changePercentage: "-1.2%",
+    score: 0.76,
+    color: "#6A0572"
   },
   {
     id: 4,
-    name: "团队合作",
-    value: "62 答案",
+    name: "用户共创计划",
+    value: "2.1K 参与数",
     changeDirection: "up",
-    changePercentage: "+0.5%",
-    score: 0.38,
-    color: "#f97316"
+    changePercentage: "+7.8%",
+    score: 0.72,
+    color: "#FFD166"
   },
   {
     id: 5,
-    name: "项目优先顺序",
-    value: "58 答案",
+    name: "怀旧营销",
+    value: "35% 转化率",
     changeDirection: "down",
-    changePercentage: "-1.2%",
-    score: 0.36,
-    color: "#ec4899"
-  },
-  {
-    id: 6,
-    name: "需求分析",
-    value: "52 答案",
-    changeDirection: "up",
-    changePercentage: "+2.7%",
-    score: 0.33,
-    color: "#8b5cf6"
-  },
-  {
-    id: 7,
-    name: "迭代计划",
-    value: "47 答案",
-    changeDirection: "up",
-    changePercentage: "+1.1%",
-    score: 0.29,
-    color: "#06b6d4"
+    changePercentage: "-2.1%",
+    score: 0.68,
+    color: "#1A535C"
   }
 ]);
 
