@@ -24,7 +24,6 @@ const { data, pending, error, refresh } = await useFetch<{
   }
 }>('/api/base', {
   method: 'POST',
-  baseURL: `http://localhost:8080`,
   body: {
     userid: 'admin'
   },
@@ -51,7 +50,6 @@ const {
     // 动态 URL，支持服务端渲染
     () => `/api/projectDetails?projectId=${route.params.id}`,
     {
-      baseURL: `http://localhost:8080`,
       key: `project-details-${route.params.id}`,
       watch: [() => route.params.id],
       timeout: 10000,
@@ -93,7 +91,6 @@ const deleteProject = async () => {
   try {
     await $fetch('/api/deleteProject', {
       method: 'DELETE',
-      baseURL: `http://localhost:8080`,
       body: {
         projectId: projectId
       }

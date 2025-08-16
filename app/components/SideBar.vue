@@ -25,7 +25,6 @@ const createNewProject = async () => {
   try {
     await $fetch('/api/addProject', {
       method: 'PUT',
-      baseURL: `http://localhost:8080`,
       body: {
         userid: 'admin',
         project: {

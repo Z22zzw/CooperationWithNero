@@ -19,7 +19,6 @@ const cards =ref<card[]>([])
 definePageMeta({
   layout: 'default'
 })
-const apiBase="http://localhost:8080"
 const { data, pending, error, refresh } = await useFetch<{
   menu: {
     projects: card[]
@@ -31,7 +30,6 @@ const { data, pending, error, refresh } = await useFetch<{
     email: string
   }
 }>('/api/base', {
-  baseURL: apiBase,
   method: 'POST',
   body: { userid: 'admin' },
   key: 'dashboard-data'
@@ -52,7 +50,6 @@ const createNewProject=async ()=>{
   try {
     const response = await $fetch('/api/addProject', {
       method: 'PUT',
-      baseURL:apiBase, // 相当于 withBaseUrl
       headers: {
         'Content-Type': 'application/json'
       },
