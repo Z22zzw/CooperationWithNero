@@ -226,6 +226,10 @@ const goBack = () => {
   padding: 0 20px;
 }
 
+.container h2{
+  text-align: center;
+}
+
 /* 搜索框美化 */
 .search-box {
   text-align: center;

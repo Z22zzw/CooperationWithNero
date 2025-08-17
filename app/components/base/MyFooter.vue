@@ -32,7 +32,7 @@ const closeModal = () => {
     <div class="qr-modal-overlay" @click="closeModal"></div>
     <div class="qr-modal-content">
       <button class="qr-modal-close" @click="closeModal">&times;</button>
-      <img src="~/assets/qr1.jpg" alt="二维码" class="qr-image" decoding="async" loading="lazy" />
+      <img src="~/assets/qr1.webp" alt="二维码" class="qr-image" decoding="async" loading="lazy" />
     </div>
   </div>
   
@@ -111,5 +111,8 @@ const closeModal = () => {
     padding: 0;
     cursor: pointer;
     text-decoration: underline;
+  }
+  .btn-primary{
+    background-color:#4f46e5;
   }
 </style>

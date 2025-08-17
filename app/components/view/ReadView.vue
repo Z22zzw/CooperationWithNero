@@ -6,7 +6,6 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M19 12H5M12 19l-7-7 7-7"></path>
         </svg>
-        返回
       </button>
     </div>
     <!-- 阅读内容区域 -->
@@ -44,13 +43,14 @@ const handleBack = () => {
   height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
   font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  padding-top: 4.5%;
 }
 
 .back-button-container {
   padding: 1rem;
   background-color: rgba(255, 255, 255, 0.95);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  z-index: 10;
+  z-index: 100;
 }
 
 .back-button {

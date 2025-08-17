@@ -1,4 +1,7 @@
 ﻿<script setup lang="ts">
+import { ref } from 'vue'
+const isYear = ref(true)
+
 export interface Item{
   header:string
   icon:string
@@ -11,6 +14,10 @@ interface Order{
   merit:Array<string>,
   highlight?:boolean
 }
+interface Morder{
+  price: number;
+}
+
 const content:Array<Item>=[
   {
     header:"AI驱动，搜索结果更精准",
@@ -36,8 +43,7 @@ const content:Array<Item>=[
 const orders:Array<Order> = [
   {
     level:"基础版",
-    price:1000,
-    originalPrice:1500,
+    price:3600,
     merit:[
         "30个词条",
         "热搜词条规划",
@@ -48,21 +54,53 @@ const orders:Array<Order> = [
   },
   {
     level:"标准版",
-    price:2000,
-    originalPrice:3000,
+    price:7200,
     merit:[
         "50个词条",
         "热搜词条规划",
         "内容DeepSeek适配",
         "双周报告",
         "5个平台覆盖"
-    ],
-    highlight:true
+    ]
   },
   {
     level:"高级版",
-    price:5000,
-    originalPrice:6500,
+    price:12000,
+    merit:[
+        "80个词条",
+        "热搜词条规划",
+        "内容DeepSeek适配",
+        "周报告+实时监测",
+        "全平台覆盖"
+    ]
+  }
+]
+const morders:Array<Order> = [
+  {
+    level:"基础版",
+    price:300,
+    merit:[
+        "30个词条",
+        "热搜词条规划",
+        "内容DeepSeek适配",
+        "月度报告",
+        "3个平台覆盖"
+    ]
+  },
+  {
+    level:"标准版",
+    price:600,
+    merit:[
+        "50个词条",
+        "热搜词条规划",
+        "内容DeepSeek适配",
+        "双周报告",
+        "5个平台覆盖"
+    ]
+  },
+  {
+    level:"高级版",
+    price:1000,
     merit:[
         "80个词条",
         "热搜词条规划",
@@ -120,7 +158,7 @@ const closeModal = () => {
     <div class="qr-modal-content">
       <button class="qr-modal-close" @click="closeModal">&times;</button>
       <!-- 为解决二维码模糊问题，添加 decoding="async" loading="lazy" 属性，并确保图片格式和尺寸合适 -->
-      <img src="~/assets/qr1.jpg" alt="二维码" class="qr-image" decoding="async" loading="lazy" />
+      <img src="~/assets/qr1.webp" alt="二维码" class="qr-image" decoding="async" loading="lazy" />
     </div>
   </div>
   <!-- 页面横幅 -->
@@ -158,62 +196,28 @@ const closeModal = () => {
         </div>
       </div>
 
-      <div class="service-details" style="margin-top: 80px;">
-        <h3 style="text-align: center; color: var(--primary-blue); margin-bottom: 15px;">DeepSeek推广服务方案</h3>
-        <p style="text-align: center; color: var(--gray); margin-bottom: 40px; max-width: 700px; margin-left: auto; margin-right: auto;">选择最适合您业务的方案，开启AI营销新篇章</p>
-        
-        <!-- 新增定价切换 -->
-        <div class="pricing-toggle" style="display: flex; justify-content: center; margin-bottom: 40px;">
-          <span style="margin-right: 15px; color: var(--gray);">月付</span>
-          <label class="toggle-switch">
-            <input type="checkbox" checked>
-            <span class="slider"></span>
+      <div class="service-details" style="margin-top: 60px;">
+        <h3 style="text-align: center; color: var(--primary-blue); margin-bottom: 30px;">DeepSeek推广服务方案</h3>
+        <!-- 切换年付和月付的按钮 -->
+        <div class="pricing-toggle">
+          <span class="toggle-label" :class="{ 'active': isYear }">年付</span>
+          <label class="toggle-container">
+            <input type="checkbox" name="checkboxswitch" v-model="isYear" class="toggle-input">
+            <span class="toggle-slider"></span>
           </label>
-          <span style="margin-left: 15px; color: var(--primary-blue); font-weight: 600;">年付 <span style="font-size: 0.8rem; background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">省20%</span></span>
+          <span class="toggle-label" :class="{ 'active': !isYear }">月付</span>
         </div>
-        
-        <div class="pricing-table" style="display: flex; justify-content: center; gap: 25px; flex-wrap: wrap; margin-bottom: 60px;">
-          <div class="pricing-card" v-for="order in orders" :key="order.level"
-               :style="{background: order.highlight ? 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)' : 'var(--white)',
-                        border: order.highlight ? '2px solid var(--primary-blue)' : '1px solid #e5e7eb',
-                        borderRadius: '15px',
-                        boxShadow: order.highlight ? '0 10px 30px rgba(59, 130, 246, 0.15)' : 'var(--shadow)',
-                        padding: '35px 30px',
-                        width: '320px',
-                        transition: 'all 0.3s ease',
-                        transform: order.highlight ? 'translateY(-10px)' : 'none'}">
-                        
-              <!-- 推荐标签 -->
-              <div v-if="order.highlight" class="recommended-tag" style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--primary-blue); color: white; padding: 3px 15px; border-radius: 15px; font-size: 0.8rem; font-weight: 600;">推荐方案</div>
-              
-              <h4 style="color: var(--primary-blue); font-size: 1.4rem; margin-bottom: 20px; position: relative;">{{order.level}}</h4>
-              
-              <div style="margin-bottom: 25px;">
-                <span style="font-size: 2.5rem; color: var(--primary-blue); font-weight: 700;">{{order.price}}</span>
-                <span style="color: var(--gray); margin-left: 5px;">元/月</span>
-                <div v-if="order.originalPrice" style="margin-top: 5px;">
-                  <span style="text-decoration: line-through; color: #9ca3af; font-size: 0.9rem;">{{order.originalPrice}}元/月</span>
-                  <span style="margin-left: 8px; color: #10b981; font-size: 0.9rem;">省{{Math.round((order.originalPrice - order.price)/order.originalPrice*100)}}%</span>
-                </div>
-              </div>
-              
-              <ul style="list-style: none; margin-bottom: 35px; padding-left: 0;">
-                <li style="margin-bottom: 12px; display: flex; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid #f1f5f9;" v-for="merit in order.merit">
-                  <i class="fas fa-check-circle" style="color: #10b981; margin-right: 10px; margin-top: 3px;"></i>
-                  <span style="color: #374151;">{{merit}}</span>
-                </li>
-              </ul>
-              
-              <button class="btn-primary" :style="{width: '100%',
-                                                  background: order.highlight ? 'var(--primary-blue)' : '#f3f4f6',
-                                                  color: order.highlight ? 'white' : '#6b7280',
-                                                  fontWeight: order.highlight ? '600' : 'normal',
-                                                  padding: '12px 0',
-                                                  borderRadius: '8px',
-                                                  transition: 'all 0.3s ease',
-                                                  border: 'none',
-                                                  cursor: 'pointer',
-                                                  fontSize: '1rem'}" @click="contactUs()">{{order.highlight ? '立即选择' : '了解更多'}}</button>
+        <div class="pricing-table" style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap;">
+          <div class="pricing-card" style="background: var(--white); border-radius: 15px; box-shadow: var(--shadow); padding: 30px; width: 300px; transition: var(--transition);" v-for="order in orders" :key="order.level">
+            <h4 style="color: var(--primary-blue); font-size: 1.3rem; margin-bottom: 15px;">{{order.level}}</h4>
+            <div style="font-size: 2rem; color: var(--primary-blue); font-weight: 700; margin-bottom: 20px;" v-if="isYear">{{order.price}}元/年</div>
+            <div style="font-size: 2rem; color: var(--primary-blue); font-weight: 700; margin-bottom: 20px;" v-if="!isYear">{{morders[orders.indexOf(order)].price}}元/月</div>
+
+            <ul style="list-style: none; margin-bottom: 30px;">
+              <li style="margin-bottom: 10px; display: flex; align-items: center;" v-for="merit in order.merit"><i class="fas fa-check" style="color: var(--primary-blue); margin-right: 10px;"></i>{{merit}}</li>
+            </ul>
+            
+            <button class="btn-primary" style="width: 100%;" @click="contactUs()">选择方案</button>
           </div>
         </div>
       </div>
@@ -233,37 +237,28 @@ const closeModal = () => {
 </template>
 
 <style scoped>
-/* 新增样式 */
-.pricing-card {
-  position: relative;
-  overflow: hidden;
+.pricing-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 30px 0;
+  gap: 15px;
 }
 
-.pricing-card:hover {
-  transform: translateY(-5px) !important;
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1) !important;
-}
-
-.btn-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-2px);
-}
-
-/* 切换按钮样式 */
-.toggle-switch {
+.toggle-container {
   position: relative;
   display: inline-block;
   width: 60px;
   height: 30px;
 }
 
-.toggle-switch input {
+.toggle-input {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.slider {
+.toggle-slider {
   position: absolute;
   cursor: pointer;
   top: 0;
@@ -275,7 +270,7 @@ const closeModal = () => {
   border-radius: 30px;
 }
 
-.slider:before {
+.toggle-slider:before {
   position: absolute;
   content: "";
   height: 22px;
@@ -287,11 +282,65 @@ const closeModal = () => {
   border-radius: 50%;
 }
 
-input:checked + .slider {
+.toggle-input:checked + .toggle-slider {
   background-color: var(--primary-blue);
 }
 
-input:checked + .slider:before {
+.toggle-input:checked + .toggle-slider:before {
   transform: translateX(30px);
+}
+
+.toggle-label {
+  position: relative;
+  color: #6b7280;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  margin-right: 20px;
+}
+
+.toggle-label:before {
+  content: attr(data-label);
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-label:nth-child(1) {
+  padding-right: 10px;
+}
+
+.toggle-label:nth-child(3) {
+  padding-left: 10px;
+}
+
+.toggle-label.active {
+  color: var(--primary-blue);
+  font-weight: 600;
+}
+
+/* 为年付标签添加优惠标记 */
+.toggle-label:nth-child(1).active:after {
+  content: "省20%"; 
+  position: absolute;
+  font-size: 0.7rem;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primary-blue);
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* 适配移动设备 */
+@media (max-width: 768px) {
+  .pricing-toggle {
+    flex-direction: column;
+    gap: 10px;
+  }
 }
 </style>
