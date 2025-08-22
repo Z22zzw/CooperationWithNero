@@ -95,7 +95,7 @@ const activeTab = ref(0);
           <StackedLineChart
               :data="chartData"
               title="各产品销售趋势对比"
-              :width="'100%'"
+              :width="'200%'"
               :height="'400px'"
               :stack="false"
           />
@@ -136,7 +136,7 @@ const activeTab = ref(0);
   height: 100vh;
   background-color: #f8fafc;
   font-family: 'Inter', 'Segoe UI', 'Microsoft YaHei', sans-serif;
-  width:110%;
+  width: 100%;
   padding-left: 20px;
 }
 
