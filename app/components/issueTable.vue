@@ -110,15 +110,21 @@
 
       <!-- 答案内容 -->
       <div class="answer-section">
-<!--        <h3>问题答案</h3>-->
-        <tabcard :tabs="tabs"
-                  :active-value="currentTab"
-                  @update:active-value="currentTab = $event"
-                  @click="askAi(currentTab)"
+        <tabcard
+            :tabs="tabs"
+            :active-value="currentTab"
+            @update:active-value="currentTab=$event"
         />
-        <div class="answer-content" v-html="questionData.answer"></div>
+          <markdown
+              :key="questionData.id + '_' + currentTab"
+              :answer="result"
+              :loading="Loading"
+              @update:loading="Loading=$event"
+              :message="messageForAI"
+              :auto-start="shouldStartStreaming"
+              @complete="handleAnswerComplete"
+          />
       </div>
-
       <!-- 引用统计 -->
       <div class="reference-section">
         <h3>引用统计</h3>
@@ -145,191 +151,143 @@
 
 <script setup lang="ts">
 import {computed, ref} from 'vue';
-
-import MarkdownIt from "markdown-it";
-
-const receivedChars=ref<number>(0)
-const currentPage = ref(1);
-const isStreaming = ref(false);
-const md = new MarkdownIt({
-  html:true,
-
-  linkify: true
-});
-function extractAndCleanMarkdown(
-    text: string,
-    options: {
-      fallbackToOriginal?: boolean;
-      ensureBreaks?: boolean;
-    } = {}
-): string {
-  const { fallbackToOriginal = true, ensureBreaks = false } = options;
-
-  let content:string|undefined= text;
-
-  // 步骤1：尝试提取 </think> 之后的内容
-  const match = content.match(/<\/think>([\s\S]*)/i);
-  if (match) {
-    content = match[1]; // 只保留闭合标签之后的内容
-  } else if (fallbackToOriginal) {
-    // 如果没有 </think>，使用原始内容（或可改为返回 ''）
-    content = text;
-  } else {
-    return '';
+import Markdown from "~/components/markdown.vue";
+import {useQuestionStore} from "~/stores/QuestionsStore";
+const drawerVisible = ref(false);
+const questionData = ref({
+  id:"",
+  title: '',
+  answer: "",
+  success: true,
+  referenceCount: 0,
+  weeklyReferences: 0,
+  maxReferences: 0
+})
+const messageForAI=computed(() => {
+  return questionData.value.title
+})
+const AllKnownQuestions = useQuestionStore()
+const currentTab = ref('deepseek')
+const Loading=ref(true);
+const shouldStartStreaming = computed(() => {
+  if ((!AllKnownQuestions.has(questionData.value.id, currentTab.value))&&drawerVisible.value){
+    Loading.value = true
   }
-  // 步骤2：清理中文之间的多余空格（如 “AI 和 人类” → “AI和人类”）
-  content = content?.replace(/([\u4e00-\u9fa5])\s+(?=[\u4e00-\u9fa5])/g, '$1');
+  return (!AllKnownQuestions.has(questionData.value.id, currentTab.value))&&drawerVisible.value
+})
 
-  // 步骤3：规范化换行（多个换行合并为段落分隔）
-  content = content?.replace(/\n\s*\n/g, '\n\n');
+const result = computed(() => {
+  const id = questionData.value.id
+  const tab = currentTab.value
+  if (!id) return ""
+  Loading.value = false
+  return AllKnownQuestions.get(id, tab) || ""
+})
 
-  // 步骤4：去除首尾空白
-  content = content?.trim();
-
-  // 可选：确保每行末尾有 2 个空格，以支持 Markdown 单行换行（<br>）
-  if (ensureBreaks) {
-    content = content!
-        .split('\n')
-        .map(line => (line.endsWith('  ') ? line : line + '  '))
-        .join('\n')
-        .replace(/\n\n/g, '\n\n'); // 避免段落间也加 2 空格
-  }
-
-  return content||"";
+function handleRowClick(row:IssuesDetails) {
+  drawerVisible.value=true
+  questionData.value.id = ''
+  nextTick(() => {
+    questionData.value.id = row.id
+    questionData.value.title = row.name
+  })
 }
-const streamingController = ref<AbortController | null>(null);
-// 修改后的 askAi 函数
-const askAi = async (value: string) => {
-  if (value === 'citations') return;
-
-  // 如果已有流式传输在运行，先取消它
-  if (streamingController.value) {
-    streamingController.value.abort();
-  }
-
-  isLoading.value = true;
-  isStreaming.value = true;
-  receivedChars.value = 0;
-  questionData.value.rawAnswer = ''; // 存储原始文本
-  questionData.value.answer = md.render('AI正在思考中...'); // 初始提示
-  await nextTick();
-
-  try {
-    // 创建新的 AbortController
-    const controller = new AbortController();
-    streamingController.value = controller;
-
-    const response = await fetch(
-        `http://localhost:8080/api/askaiai?message=${encodeURIComponent(clickedRowData.value?.name || '')}`,
-        { signal: controller.signal }
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP错误! 状态码: ${response.status}`);
-    }
-
-    if (!response.body) {
-      throw new Error('当前浏览器不支持流式API');
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let accumulatedData = '';
-    let contentAvailable = false;
-
-    // 处理流式数据
-    while (true) {
-      const { done, value: chunk } = await reader.read();
-      if (done) break;
-
-      const textChunk = decoder.decode(chunk, { stream: true });
-      accumulatedData += textChunk;
-
-      let index;
-      while ((index = accumulatedData.indexOf('\n')) !== -1) {
-        const line = accumulatedData.substring(0, index);
-        accumulatedData = accumulatedData.substring(index + 1);
-
-        if (line.startsWith('data:')) {
-          const content = line.substring(5);
-          if (content) {
-            questionData.value.rawAnswer += content+ '\n';
-            receivedChars.value++
-            questionData.value.answer = md.render(questionData.value.rawAnswer);
-            await nextTick();
-          }
-        }
-      }
-    }
-
-// 处理最后剩余部分（可能没有 \n 结尾）
-    if (accumulatedData.startsWith('data:')) {
-      const content = accumulatedData.substring(5);
-      if (content) {
-        questionData.value.rawAnswer += content + '\n';
-        questionData.value.answer = md.render(questionData.value.rawAnswer);
-      }
-    }
-
-    // 如果没有任何有效内容
-    if (!contentAvailable) {
-      throw new Error('服务器返回了响应但没有实际内容');
-    }
-
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
-      console.log('用户取消了请求');
-    } else {
-      console.error('流处理错误:', error);
-
-      // 显示已接收的内容
-      if (questionData.value.rawAnswer) {
-        questionData.value.answer = md.render(
-            questionData.value.rawAnswer +
-            '\n\n<错误> 数据流处理不完整: ' + error
-        );
-      } else {
-        questionData.value.answer = '<p>⚠️ 获取回答时出错，请重试</p>';
-      }
-    }
-  } finally {
-    // 提取 </think> 之后的内容
-    const finalAnswer = questionData.value.rawAnswer;
-
-    // 更新显示
-    questionData.value.rawAnswer = extractAndCleanMarkdown(finalAnswer);
-    questionData.value.answer = md.render(finalAnswer);
-    console.log(finalAnswer);
-    isLoading.value = false;
-    isStreaming.value = false;
-    streamingController.value = null;
-  }
-};
-// 在抽屉关闭时取消流式传输
-const handleDrawerClose = () => {
-  if (streamingController.value) {
-    streamingController.value.abort();
-  }
-  drawerVisible.value = false;
-};
+function handleAnswerComplete(value:string) {
+  AllKnownQuestions.set(questionData.value.id,currentTab.value,value)
+}
+function handleDrawerClose(){
+  currentTab.value="deepseek"
+  Loading.value = true
+  drawerVisible.value = false
+  questionData.value.id = ''
+  AllKnownQuestions.show()
+}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const currentPage = ref(1);
 const pageSize = ref(10);
-const isLoading=ref(true);
 const displayData = ref<IssuesDetails[]>([]);
-
 const selectedIds = ref<string[]>([]);
-
+// { name: '引文', value: 'citations' }
 const tabs = ref([
   {name: "deepseek", value: 'deepseek' },
   {name: "豆包", value: 'doubao' },
   {name:"通义千问", value: 'tongyiqianwen' },
   {name: "文心一言",value: "wenxinyiyan"},
-  { name: '引文', value: 'citations' }
 ])
 
-const currentTab = ref('deepseek')
-const drawerVisible = ref(false);
 interface IssuesDetails {
   id: string;
   name: string;
@@ -337,7 +295,6 @@ interface IssuesDetails {
   citations: number;
   updated_at: string;
 }
-
 const platform={
   icons:[
       "deepseek",
@@ -346,37 +303,10 @@ const platform={
       "tongyi"
   ]
 }
-const clickedRowData = ref<IssuesDetails>();
-const questionData = ref({
-  title: 'UNKNOW',
-  rawAnswer: 'UNKNOW',
-  answer: md.render(`UNKNOW`),
-  success: true,
-  referenceCount: 0,
-  weeklyReferences: 0,
-  maxReferences: 0
-});
-const handleRowClick=(row: IssuesDetails)=>{
-  clickedRowData.value = row;
-  console.log('点击的行数据:', row);
-  questionData.value=
-      {
-        title: row.name,
-        rawAnswer: "UNKNOW",
-        answer: md.render(`UNKNOW`),
-        success: true,
-        referenceCount: row.citations,
-        weeklyReferences: row.mention_times,
-        maxReferences: 500
-      }
-  askAi("deepseek")
-  drawerVisible.value = true;
-}
 const projectId=ref(useRoute().params.id)
 // 使用 useFetch 获取数据
 const { data, pending, error, refresh } = await useFetch<IssuesDetails[]>('/api/issues', {
   method: 'POST',
-  baseURL: `http://localhost:8080`,
   body: {
     project_id: projectId.value
   },

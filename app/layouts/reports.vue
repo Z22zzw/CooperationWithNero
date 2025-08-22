@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { ProjectDetails } from "@/interface/ProjectDetails"
-import {type card} from "~/pages/index.vue";
+import {type card} from "~/pages/dashboard.vue";
 const route = useRoute();
 const router = useRouter();
 const { data, pending, error, refresh } = await useFetch<{
@@ -20,7 +20,6 @@ const { data, pending, error, refresh } = await useFetch<{
   }
 }>('/api/base', {
   method: 'POST',
-  baseURL: 'http://192.168.0.10:8080',
   body: {
     userid: 'admin'
   },
@@ -45,7 +44,6 @@ const {
 }= await useFetch<ProjectDetails>(
     () => `/api/projectDetails?projectId=${route.params.id}`,
     {
-      baseURL: 'http://192.168.0.10:8080',
       key: `project-details-${route.params.id}`,
       watch: [() => route.params.id],
       timeout: 10000,
@@ -88,13 +86,12 @@ const deleteProject = async () => {
   try {
     await $fetch('/api/deleteProject', {
       method: 'DELETE',
-      baseURL: 'http://localhost:8080',
       body: {
         projectId: projectId
       }
     })
     console.log('项目删除成功:', projectId)
-    await navigateTo('/', { replace: true })
+    await navigateTo('/dashboard', { replace: true })
     await nextTick()
     await refreshNuxtData('user-menu-data')
   } catch (error: any) {

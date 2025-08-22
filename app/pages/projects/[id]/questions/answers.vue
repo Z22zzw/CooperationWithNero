@@ -27,9 +27,8 @@ const openSidePanel = async () => {
   formData.append('question', aiKeyword.value)
 
   try {
-    const result = await $fetch<{ data: string[] }>('/questionAI', {
+    const result = await $fetch<{ data: string[] }>('/api/questionAI', {
       method: 'POST',
-      baseURL: `http://localhost:8080`,
       body: formData, // $fetch 支持 FormData 自动设置 Content-Type
     })
     aiSuggestions.value = result.data
@@ -54,7 +53,6 @@ const handleConfirm = async (question: string) => {
   try {
     await $fetch('/api/addissue', {
       method: 'PUT',
-      baseURL: 'http://192.168.10.10:8080',
       body: {
         project_id: projectId,
         issueList: [
@@ -100,7 +98,6 @@ const applySuggestion = async () => {
   try {
     await $fetch('/api/addissue', {
       method: 'PUT',
-      baseURL: 'http://192.168.0.10:8080',
       body: {
         project_id: projectId,
         issueList: addIssues
@@ -128,7 +125,6 @@ const handleDelete = async () => {
   try {
     await $fetch('/api/deleteIssues', {
       method: 'DELETE',
-      baseURL: 'http://192.168.0.10:8080',
       body: {
         id: selectedIds.value
       }

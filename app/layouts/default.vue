@@ -1,31 +1,29 @@
 ﻿<script setup lang="ts">
-import {type card} from "~/pages/index.vue";
-const { data, pending, error, refresh } = await useFetch<{
-  menu:{
-      projects:card[],
-      domains:{
-        id:string,
-        name:string
-      }[]
-    },
-    profiles:{
-      icon?:string,
-      name:string,
-      email:string
-    }
-  }>('/api/base', {
-    method: 'POST',
-    baseURL: `http://localhost:8080`,
-    body: { userid: 'admin' },
-    key: 'user-base-data',
-})
-
+import {type card} from "~/pages/dashboard.vue";
+import {watchEffect} from "vue";
+interface ApiResponse {
+  menu: {
+    projects: card[];
+    domains: { id: string; name: string }[];
+  };
+  profiles: {
+    icon?: string;
+    name: string;
+    email: string;
+  };
+}
+const { data, pending, error, refresh } = await useAsyncData<ApiResponse>(
+    'dashboard-data',
+    () => $fetch("/api/base", {
+      method: 'POST',
+      body: { userid: 'admin' }
+    })
+)
 // 直接响应式绑定
 const menu = computed(() => data.value?.menu || {
   projects: [],
   domains: []
 })
-
 const profiles = computed(() => data.value?.profiles || {
   name: '',
   email: ''

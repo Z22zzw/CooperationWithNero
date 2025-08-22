@@ -203,9 +203,9 @@ const getAIResponse = async (questionText: string) => {
   try {
     const formData = new FormData();
     formData.append('question', questionText);
-    const response = await fetch(`http://localhost:8080/api/chat`, {
+    const response = await fetch(`/api/chat`, {
       method: 'POST',
-      body: formData
+      body: formData,
     });
 
     if (!response.ok) {

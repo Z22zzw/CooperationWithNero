@@ -25,7 +25,6 @@ const createNewProject = async () => {
   try {
     await $fetch('/api/addProject', {
       method: 'PUT',
-      baseURL: `http://localhost:8080`,
       body: {
         userid: 'admin',
         project: {
@@ -46,13 +45,39 @@ const createNewProject = async () => {
 const createDomain=()=>{
   // Fetcher().withBaseUrl("http://192.68.0.10:8080").put()
 }
+const logout=()=>{
+  // 执行登出逻辑
+  console.log('用户登出');
+
+  navigateTo({
+    path:'/',
+    replace:true
+  })
+}
+const showDropdown=ref(false)
+const profileCardRef = ref<HTMLElement | null>(null)
+function handleClick(event:MouseEvent) {
+  const target = event.target as Node
+  if (showDropdown.value && profileCardRef.value && !profileCardRef.value.contains(target)) {
+    showDropdown.value = false
+  }
+}
+const toggleDropdown=()=>{
+  showDropdown.value = true;
+}
+onMounted(() => {
+  document.addEventListener('click', handleClick)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClick)
+})
 </script>
 
 <template>
   <nav class="sideBar">
     <!-- 项目 -->
     <div>
-      <NuxtLink to="/" class="menuItem">
+      <NuxtLink to="/dashboard" class="menuItem">
         <h3><span><i class="fas fa-home"></i></span> 主页</h3>
       </NuxtLink>
     </div>
@@ -131,7 +156,10 @@ const createDomain=()=>{
             <span>设置</span>
           </a>
         </li>
-        <li class="profile-card">
+        <li class="profile-card"
+            ref="profileCardRef"
+            @click.stop="toggleDropdown"
+        >
           <img
               v-if="profiles?.icon"
               :src="profiles.icon"
@@ -143,6 +171,13 @@ const createDomain=()=>{
             <span class="name">{{ profiles.name }}</span>
             <span class="email">{{ profiles.email }}</span>
           </div>
+          <ul
+              class="dropdown-menu"
+              :class="showDropdown ? 'show':''"
+              @click.stop
+          >
+            <li @click="logout" class="dropdown-item">Logout</li>
+          </ul>
         </li>
       </ul>
     </div>
@@ -234,6 +269,7 @@ const createDomain=()=>{
 
 .add-link:hover {
   color: #1a56db;
+  cursor:  pointer;
   background-color: #f5f9ff;
 }
 
@@ -341,7 +377,42 @@ const createDomain=()=>{
   margin-left: 4px;
   color: #ff4d4f;
 }
+/* 下拉菜单样式 */
+.dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  right: 10%;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+  min-width: 120px;
+  z-index: 1000;
+  transform: scaleY(0); /* 初始状态：缩放为0 */
+  transform-origin: bottom; /* 缩放原点设置在顶部 */
+  opacity: 0;            /* 初始透明度：完全透明 */
+  transition: transform 0.3s ease, opacity 0.3s ease; /* 动画过渡 */
+}
 
+/* 当添加.show类时，菜单会显示 */
+.dropdown-menu.show {
+  transform: scaleY(1); /* 显示状态：恢复原始大小 */
+  opacity: 1;           /* 显示状态：完全不透明 */
+}
+
+.dropdown-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+}
+
+.dropdown-item:hover {
+  background-color: #f5f5f5;
+}
 .custom-input {
   width: 100%;
 }

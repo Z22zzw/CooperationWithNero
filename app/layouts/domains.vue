@@ -1,8 +1,4 @@
 ﻿<script setup lang="ts">
-// menu:{
-//   projects:{name:string,url:string}[],
-//       domains:{name:string,url:string}[]
-// }
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { ProjectDetails } from "@/interface/ProjectDetails"
@@ -40,45 +36,40 @@ interface Option {
   name: string
   value: string
 }
-// 使用 useFetch 获取项目数据（支持 SSR）
-const {
-  data: projectData,
-  pending: isLoading,
-  error: fetchError,
-  refresh: refreshProject
-}= await useFetch<ProjectDetails>(
-    // 动态 URL，支持服务端渲染
-    () => `/api/projectDetails?projectId=${route.params.id}`,
-    {
-      key: `project-details-${route.params.id}`,
-      watch: [() => route.params.id],
-      timeout: 10000,
-      retry: 2
-    }
-)
-// 响应式数据（自动更新）
-const demoProject = computed(() => projectData.value || null)
+
+interface Domain{
+  id: string
+  name: string
+}
+const demoDomain = computed<Domain | null>(() => {
+  if (!data.value?.menu) {
+    return null
+  }
+  const id = route.params.id
+  const domainId = typeof id === 'string' ? id : ''
+  const found = data.value.menu.domains.find(domain => domain.id === domainId)
+  return found || null
+})
 
 // 定义导航标签数据
 const computedTabs = computed(() => {
-  const projectId = demoProject.value?.id;
+  const domainId = demoDomain.value?.id;
   return [
-    { key: 'overview', label: '概述', url: `/projects/${projectId}/overview` },
-    { key: 'report', label: '报告', url: `/projects/${projectId}/report` },
-    { key: 'issue', label: '问题', url: `/projects/${projectId}/questions` },
+    { key: 'issues', label: '问题', url: `/domains/${domainId}` },
+    { key: 'referrals', label: '引荐', url: `/domains/${domainId}/referrals` },
+    { key: 'agent-activity', label: '代理', url: `/domains/${domainId}/agent-activity` },
   ];
 });
 // 简化isActive函数
 const isActive = (url: string) => {
   // 获取当前路由路径
   const currentPath = route.path;
-
   // 构造问题页面的基础路径 (不含子路由)
-  const questionsBasePath = `/projects/${route.params.id}/questions`;
+  // const questionsBasePath = `/domains/${route.params.id}/questions`;
   // 特殊处理问题页面的路径：匹配自身及所有子路径
-  if (url === questionsBasePath) {
-    return currentPath === url || currentPath.startsWith(`${url}/`);
-  }
+  // if (url === questionsBasePath) {
+    // return currentPath === url || currentPath.startsWith(`${url}/`);
+  // }
   // 其他菜单（如答案页）保持精确匹配
   return currentPath === url;
 };
@@ -86,16 +77,16 @@ const isActive = (url: string) => {
 const handleTabClick = (url: string) => {
   router.push(url);
 };
-const deleteProject = async () => {
-  const projectId = route.params.id as string
+const deleteDomain = async () => {
+  const DomainId = route.params.id as string
   try {
-    await $fetch('/api/deleteProject', {
+    await $fetch('/api/deleteDomain', {
       method: 'DELETE',
       body: {
-        projectId: projectId
+        DomainId: DomainId
       }
     })
-    console.log('项目删除成功:', projectId)
+    console.log('域名删除成功:', DomainId)
     await navigateTo('/dashboard', { replace: true })
     await nextTick()
     await refreshNuxtData('dashboard-data')
@@ -113,10 +104,10 @@ const deleteProject = async () => {
     <!-- 主内容区 -->
     <div class="main-content">
       <div class="main-header">
-        <h2 class="project-title">{{ demoProject?.name }}</h2>
+        <h2 class="Domain-title">{{ demoDomain?.name}}</h2>
         <div class="header-actions">
-          <button class="action-btn share-btn" style="background-color:#dc0404" @click="deleteProject">
-            <i class="fas fa-trash"></i> 删除项目
+          <button class="action-btn share-btn" style="background-color:#dc0404" @click="deleteDomain">
+            <i class="fas fa-trash"></i> 删除域名
           </button>
         </div>
       </div>
@@ -131,6 +122,14 @@ const deleteProject = async () => {
             @click.prevent="handleTabClick(tab.url)"
         >
           {{ tab.label }}
+        </a>
+        <a class="setting-link" @click="()=>{
+          navigateTo(`/domains/${route.params.id}/settings`);
+        }">
+          <span>
+            <i class="fas fa-cogs"/>
+          </span>
+          域名设置
         </a>
       </div>
 
@@ -165,7 +164,7 @@ const deleteProject = async () => {
   border-bottom: 1px solid #e1e5e9;
 }
 
-.project-title {
+.Domain-title {
   font-size: 28px;
   font-weight: 600;
   color: #1a1d21;
@@ -222,7 +221,6 @@ const deleteProject = async () => {
   border-bottom: 1px solid #e1e5e9;
   padding-bottom: 12px;
 }
-
 .nav-link {
   text-decoration: none;
   font-size: 16px;
@@ -252,7 +250,20 @@ const deleteProject = async () => {
   background-color: #5470c6;
   border-radius: 3px;
 }
+.setting-link{
 
+  margin-left: auto;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 500;
+  color: #666;
+  padding: 8px 30px 8px 0;
+  position: relative;
+  transition: color 0.2s ease;
+}
+.setting-link:hover {
+  cursor:  pointer;
+}
 /* 响应式设计 */
 @media (max-width: 768px) {
   .main-content {

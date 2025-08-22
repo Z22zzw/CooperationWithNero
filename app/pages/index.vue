@@ -1,308 +1,332 @@
 ﻿<script setup lang="ts">
-import {ref} from "vue";
-
-export interface card {
-  id: string,
-  name: string,
-  issues: number,
-  updateTime: string,
-  mostVisible: string,
-  yourVisibility: string,
-  topCitation: string,
-  yourCitation: string,
-}
-const gotoProject=(item:card)=>{
-  console.log(item.id)
-  navigateTo(`/projects/${item.id}/overview`)
-}
-const cards =ref<card[]>([])
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 definePageMeta({
-  layout: 'default'
+  layout: false
 })
-const apiBase="http://localhost:8080"
-const { data, pending, error, refresh } = await useFetch<{
-  menu: {
-    projects: card[]
-    domains: { id: string; name: string }[]
-  }
-  profiles: {
-    icon?: string
-    name: string
-    email: string
-  }
-}>('/api/base', {
-  baseURL: apiBase,
-  method: 'POST',
-  body: { userid: 'admin' },
-  key: 'dashboard-data'
-})
+const router = useRouter()
+const email = ref('')
+const password = ref('') // 添加密码字段用于模拟登录
+const emailError = ref('')
+const passwordError = ref('')
+const loginError = ref('')
+const isLoading = ref(false)
 
-watch(
-    () => data.value,
-    (newData) => {
-      if (newData) {
-        cards.value = newData.menu.projects
-      }
-    },
-    { immediate: true } // 立即执行一次
-)
-import {v4 as uuidv4} from "uuid";
-const projectName=ref("");
-const createNewProject=async ()=>{
-  try {
-    const response = await $fetch('/api/addProject', {
-      method: 'PUT',
-      baseURL:apiBase, // 相当于 withBaseUrl
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: {
-        userid: 'admin',
-        project: {
-          id: uuidv4(),
-          name: projectName.value
-        }
-      }
-    })
-    console.log('创建成功:', response)
-    await refreshNuxtData('dashboard-data')
-    await refreshNuxtData('user-menu-data')
-  } catch (error) {
-    console.error('创建失败:', error)
+// 验证邮箱格式
+const isValidEmail = (email: string): boolean => {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return regex.test(email)
+}
+
+const validateForm = () => {
+  let isValid = true
+
+  if (!email.value) {
+    emailError.value = '邮箱不能为空'
+    isValid = false
+  } else if (!isValidEmail(email.value)) {
+    emailError.value = '请输入有效的邮箱地址'
+    isValid = false
+  } else {
+    emailError.value = ''
   }
+
+  if (!password.value) {
+    passwordError.value = '密码不能为空'
+    isValid = false
+  } else {
+    passwordError.value = ''
+  }
+
+  return isValid
+}
+
+const handleLogin = async () => {
+  if (!validateForm()) return
+
+  try {
+    isLoading.value = true
+    loginError.value = ''
+
+    // 模拟API请求延迟
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    // 模拟登录验证
+    if (email.value === 'dangxia@163.com' && password.value === '123456') {
+      // 模拟获取token
+      const mockToken = 'mock_jwt_token_' + Math.random().toString(36).substring(2)
+
+      // 存储token到localStorage
+      localStorage.setItem('token', mockToken)
+      localStorage.setItem('userEmail', email.value)
+
+      console.log('模拟登录成功', { token: mockToken })
+
+      // 跳转到首页
+      router.push('/dashboard')
+    } else {
+      throw new Error('邮箱或密码错误')
+    }
+
+  } catch (error) {
+    loginError.value = error instanceof Error ? error.message : '登录失败'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const wechatLogin = () => {
+  console.log('微信登录')
+  alert('模拟微信登录功能')
 }
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="PageShow">
-      <h1>主页</h1>
-    </div>
-
-    <div class="main">
-      <div class="header-row">
-        <h2>你的项目</h2>
-        <add-new-project-0r-domain title="添加新项目" @submit="createNewProject">
-          <template v-slot:trigger="{open}">
-            <a href="#" class="add-project"  @click="open">
-              <i class="fas fa-plus add-icon"/>
-              添加新项目
-            </a>
-          </template>
-          <template #body>
-            <label class="input-label">项目名</label>
-            <el-input
-                v-model="projectName"
-                placeholder="输入项目名"
-                class="custom-input">
-            </el-input>
-            <div class="hint-text">建议输入2-20个字符的项目名称</div>
-          </template>
-        </add-new-project-0r-domain>
+  <div class="login-container">
+    <div class="login-card">
+      <!-- 用户图标 -->
+      <div class="user-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path fill-rule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clip-rule="evenodd" />
+        </svg>
       </div>
-      <div class="projectContainer">
-        <div  @click="gotoProject(card)"
-            v-for="card in cards"
-            :key="card.name"
-            class="projectCard"
-        >
-          <!-- 项目名 + 问题数 -->
-          <div class="card-header">
-            <h3 class="project-name">{{ card.name }}</h3>
-            <span class="issue-badge" :class="{ 'high': card.issues > 10, 'medium': card.issues > 5 }">
-              {{ card.issues }} 个问题
-            </span>
-          </div>
 
-          <!-- 更新时间 -->
-          <p class="update-time">更新于：{{ card.updateTime }}</p>
+      <!-- 标题 -->
+      <h1 class="login-title">使用电子邮件登录</h1>
 
-          <!-- 指标行 -->
-          <div class="metrics">
-            <div class="metric">
-              <label>最高可见性</label>
-              <span>{{ card.mostVisible }}</span>
-            </div>
-            <div class="metric">
-              <label>你的可见性</label>
-              <span class="highlight">{{ card.yourVisibility }}</span>
-            </div>
-          </div>
-
-          <div class="metrics">
-            <div class="metric">
-              <label>最常引用</label>
-              <span>{{ card.topCitation }}</span>
-            </div>
-            <div class="metric">
-              <label>你的引用</label>
-              <span class="highlight">{{ card.yourCitation }}</span>
-            </div>
-          </div>
+      <!-- 表单区域 -->
+      <div class="login-form">
+        <div class="input-group">
+          <label for="email">电子邮件</label>
+          <input
+              id="email"
+              type="email"
+              placeholder="您的电子邮件地址"
+              v-model="email"
+              @blur="validateForm"
+              @input="emailError = ''"
+              autocomplete="off"
+              :disabled="isLoading"
+          >
+          <p v-if="emailError" class="text-error">{{ emailError }}</p>
         </div>
+
+        <div class="input-group">
+          <label for="password">密码</label>
+          <input
+              id="password"
+              type="password"
+              placeholder="请输入您的密码"
+              v-model="password"
+              @input="passwordError = ''"
+              :disabled="isLoading"
+          >
+          <p v-if="passwordError" class="text-error">{{ passwordError }}</p>
+        </div>
+
+        <p v-if="loginError" class="text-error">{{ loginError }}</p>
+
+        <button
+            class="login-button"
+            @click="handleLogin"
+            :disabled="isLoading"
+        >
+          {{ isLoading ? '登录中...' : '登录' }}
+        </button>
+
+        <div class="divider">
+          <span class="divider-text">或</span>
+        </div>
+
+        <button
+            class="wechat-login-button"
+            @click="wechatLogin"
+            :disabled="isLoading"
+        >
+          <img
+              src="https://ts2.tc.mm.bing.net/th/id/OSAAS.7863A2F4F2A334D3E00E231B18F70418CC5608BDE28449381BE0B2884AB88E28?w=72&h=72&c=1&rs=1&o=6&dpr=1.5&pid=TechQna"
+              alt="微信"
+              class="wechat-icon"
+          >
+          微信登录
+        </button>
+      </div>
+
+      <!-- 注册链接 -->
+      <div class="register-link">
+        没有帐户? <NuxtLink to="/register" class="register-text">注册</NuxtLink>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.add-project {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px; /* 图标和文字间距 */
-
-  font-size: 16px;
-  font-weight: 500;
-  color: #1a73e8;
-
+* {
   margin: 0;
-  padding: 10px 16px; /* 增加点击区域 */
-
-  background-color: #f8fafc;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-
-  cursor: pointer;
-  text-decoration: none;
-
-  transition: all 0.2s ease;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.add-project:hover {
-  color: #1557b0;
-  background-color: #ebf5ff;
-  border-color: #1a73e8;
-
-  /* 图标轻微上浮 */
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(26, 115, 232, 0.1);
-}
-
-.add-icon {
-  font-size: 14px;
-  transition: transform 0.2s ease;
-}
-
-.add-project:hover .add-icon {
-  transform: scale(1.2); /* 悬停时图标放大 */
-}
-.header-row {
+.login-container {
   display: flex;
-  justify-content: space-between; /* 左右分开 */
-  align-items: center;           /* 垂直居中 */
-  margin: 32px 0 16px 0;
-}
-.page-container {
-  padding: 24px;
-  background-color: #f9fafb;
+  justify-content: center;
+  align-items: center;
   min-height: 100vh;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  color: #1f2937;
-}
-
-.PageShow h1 {
-  font-size: 28px;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 24px;
-}
-
-.main h2 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 32px 0 16px 0;
-}
-
-.projectContainer {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-top: 12px;
-}
-
-.projectCard {
-  background: #ffffff;
-  border-radius: 12px;
+  background-color: white;
   padding: 20px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  border: 1px solid #e5e7eb;
-  transition: all 0.2s ease;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 40px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.user-icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.user-icon svg {
+  width: 48px;
+  height: 48px;
+  color: #333;
+}
+
+.login-title {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.login-form {
   display: flex;
   flex-direction: column;
+  gap: 20px;
 }
 
-.projectCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-/* 卡片头部：项目名 + 问题数 */
-.card-header {
+.input-group {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.project-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0;
-}
-
-.issue-badge {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background-color: #fee2e2;
-  color: #86959e;
-}
-
-.issue-badge.medium {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.issue-badge.high {
-  background-color: #fecaca;
-  color: #b91c1c;
-}
-
-.update-time {
-  font-size: 13px;
-  color: #6b7280;
-  margin: 0 0 16px 0;
-}
-
-/* 指标区域 */
-.metrics {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  margin-bottom: 8px;
-}
-
-.metric {
-  flex: 1;
-}
-
-.metric label {
-  display: block;
-  font-size: 12px;
-  color: #6b7280;
-  margin-bottom: 4px;
-}
-
-.metric span {
-  color: #374151;
+.input-group label {
+  font-size: 0.875rem;
+  color: #333;
   font-weight: 500;
 }
 
-.metric .highlight {
-  color: #1a73e8;
-  font-weight: 600;
+.input-group input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #666;
+}
+
+.login-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #000;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.login-button:hover {
+  background-color: #333;
+}
+
+.login-button:disabled {
+  background-color: #999;
+  cursor: not-allowed;
+}
+
+.text-error {
+  color: #ff4d4f;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  height: 1rem;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+  color: #999;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #ddd;
+}
+
+.divider-text {
+  padding: 0 10px;
+  font-size: 0.875rem;
+}
+
+.wechat-login-button {
+  width: 100%;
+  padding: 12px;
+  background-color: white;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.wechat-login-button:hover {
+  background-color: #f5f5f5;
+}
+
+.wechat-login-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.wechat-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.register-link {
+  text-align: center;
+  margin-top: 20px;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.register-text {
+  color: #333;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.register-text:hover {
+  text-decoration: underline;
 }
 </style>

@@ -62,7 +62,7 @@ onMounted(() => {
   if (!chartRef.value) return
 
   // 初始化图表实例
-  myChart = echarts.init(chartRef.value)
+  myChart = echarts.init(chartRef.value as HTMLElement)
   updateChart()
 
   // 监听窗口 resize

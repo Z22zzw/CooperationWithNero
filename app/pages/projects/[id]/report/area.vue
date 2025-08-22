@@ -1,11 +1,10 @@
 ﻿<script setup lang="ts">
-import { ref } from "vue";
-import PlatformLineChart from "~/components/PlatformLineChart.vue";
+
+import {ref} from "vue";
 
 definePageMeta({
   layout: 'reports'
 })
-
 const chartData = ref({
   xAxisData: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
   series: [
@@ -78,73 +77,79 @@ const rankingItems = ref([
     color: "#1A535C"
   }
 ]);
-
 const tabs = ['可见性', '互动率', '影响度'];
 const activeTab = ref(0);
+
 </script>
 
 <template>
-  <div class="rank-card">
-    <div class="rank-card-header">
+  <div class="dashboard-container">
+    <header class="main-header">
       <div class="rank-card-title">
         <p class="question">什么是区域？</p>
         <p class="answer">区域报告深入了解了在 AI 对话中推动引用次数最多的地区。给定地区的更多引用意味着它是对问题的回答的高度权威来源。</p>
       </div>
+    </header>
+
+    <main class="main-content">
       <section class="chart-section">
         <!-- 折线图区域 -->
         <div class="chart-card">
-          <PlatformLineChart
+          <StackedLineChart
               :data="chartData"
-              title="各平台提及前后趋势对比"
-              :width="'100%'"
+              title="各产品销售趋势对比"
+              :width="'80%'"
               :height="'400px'"
               :stack="false"
           />
         </div>
-      </section>
-      <h3>最明显的提及</h3>
-      <div class="tab-controls">
-        <button
-            v-for="(tab, index) in tabs"
-            :key="index"
-            class="tab-btn"
-            :class="{ active: activeTab === index }"
-            @click="activeTab = index"
-        >
-          {{ tab }}
-        </button>
-      </div>
-    </div>
 
-    <div class="rank-card-body">
-      <rank-table
-          :items="rankingItems"
-          :items-per-page="5"
-      />
-    </div>
+        <!-- 排行榜表格区域（带独立滚动） -->
+        <div class="rank-card">
+          <div class="rank-card-header">
+            <h3>最明显的提及</h3>
+            <div class="tab-controls">
+              <button
+                  v-for="(tab, index) in tabs"
+                  :key="index"
+                  class="tab-btn"
+                  :class="{ active: activeTab === index }"
+                  @click="activeTab = index"
+              >
+                {{ tab }}
+              </button>
+            </div>
+          </div>
+
+          <div class="rank-card-body">
+            <rank-table
+                :items="rankingItems"
+                :items-per-page="5"
+            />
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 </template>
-
 <style scoped>
-.rank-card {
-  background-color: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  padding: 24px;
-  margin: 24px;
-}
-
-.rank-card-header {
+.dashboard-container {
+  background-color: #f9f9f9; /* 卡片背景颜色 */
+  border: 1px solid #ddd; /* 边框样式 */
+  border-radius: 8px; /* 圆角边框 */
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  height: 100vh;
+  font-family: 'Inter', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  padding-left: 20px;
+  width: 100%;
 }
-
 .rank-card-title {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 16px;
   background-color: #edf2f7;
+  max-width: 100%;
 }
 
 .question {
@@ -159,74 +164,128 @@ const activeTab = ref(0);
   color: #4a5568;
   margin: 0;
 }
+.main-header {
+  width: 80%;
+  padding: 20px 30px;
+  background: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  z-index: 10;
+}
 
-.chart-section {
+.main-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.main-content {
   width: 100%;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  flex: 1;
+  padding: 20px;
   overflow: hidden;
 }
 
+.chart-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 20px;
+}
+
 .chart-card {
-  padding: 16px;
-  background-color: #ffffff;
+  min-height: 300px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+  width: 80%;
+}
+
+.chart-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.rank-card {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+  height: 100vh;
+  width: 80%;
+}
+
+.rank-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.rank-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fafafa;
+}
+
+.rank-card-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1a1a1a;
 }
 
 .tab-controls {
   display: flex;
   gap: 8px;
-  margin-top: 16px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 5px;
 }
 
 .tab-btn {
   padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #4a5568;
-  background-color: transparent;
-  border: 1px solid #cbd5e0;
   border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-weight: 500;
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .tab-btn.active {
-  background-color: #111827;
-  color: #ffffff;
-  border-color: #111827;
-}
-
-.tab-btn:hover {
-  background-color: #f1f5f9;
-  border-color: #a0aec0;
+  background: white;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05);
 }
 
 .rank-card-body {
-  margin-top: 24px;
-  width: 300px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
 }
 
-.rank-table {
-  width: 100%;
-  border-collapse: collapse;
-}
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 10px;
+  }
 
-.rank-table th, .rank-table td {
-  padding: 12px 16px;
-  text-align: left;
-  border-bottom: 1px solid #e2e8f0;
-}
+  .chart-section {
+    gap: 15px;
+  }
 
-.rank-table th {
-  background-color: #edf2f7;
-  font-weight: 600;
-  color: #1a202c;
-}
+  .rank-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
 
-.rank-table tr:nth-child(even) {
-  background-color: #f7fafc;
+  .tab-controls {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>
-
-
-

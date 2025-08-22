@@ -71,7 +71,7 @@
       <!-- 图表区域 -->
       <div class="chart-container">
         <div class="data-show card-base">
-          <LineChart :data="demoProject.change_line"/>
+          <LineChart :data="transformToChartData(demoProject.change_line)"/>
         </div>
         <div class="mention-contain card-base">
           <TableShow :table-list="demoProject.mention" header="最明显的提及" description="所有答案中提及最多的" table_header="提到"/>
@@ -129,7 +129,6 @@ function getCurrentDate() {
 }
 // 获取项目数据
 const { data, pending, error, refresh } = await useFetch<ProjectDetails>(() => `/api/projectDetails?projectId=${route.params.id}`, {
-  baseURL:`http://localhost:8080e`, // 如果你的 API 不在同域
   key: `project-details-${route.params.id}`, // 缓存 key，避免不同 id 混淆
   watch: [() => route.params.id] // 路由变化时自动刷新
 })
@@ -152,6 +151,32 @@ watch(
 // 卡片交互函数保持不变
 const toggleCardActive = (cardType: string) => {
   activeCard.value = activeCard.value === cardType ? null : cardType
+}
+function transformToChartData(data, options = {}) {
+  // 提取 labels 和 values
+  const labels = data.map(item => item.x)
+  const values = data.map(item => item.y)
+
+  // 配置项默认值
+  const {
+    label = 'Total referrals',
+    backgroundColor = 'rgba(54, 162, 235, 0.2)',
+    borderColor = 'rgba(54, 162, 235, 1)',
+    borderWidth = 1
+  } = options
+
+  return {
+    labels,
+    datasets: [
+      {
+        label,
+        data: values,
+        backgroundColor,
+        borderColor,
+        borderWidth
+      }
+    ]
+  }
 }
 </script>
 <style scoped>
